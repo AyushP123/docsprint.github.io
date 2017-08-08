@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Advanced features &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../index.html" />
+    <link rel="next" title="Posting sources" href="postingsource.html" />
+    <link rel="prev" title="Xapian Learning-to-Rank" href="../howtos/learning_to_rank.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="postingsource.html" title="Posting sources"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../howtos/learning_to_rank.html" title="Xapian Learning-to-Rank"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="advanced-features">
+<h1>Advanced features<a class="headerlink" href="#advanced-features" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="postingsource.html">Posting sources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="postingsource.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="postingsource.html#example">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="postingsource.html#multiple-databases-and-remote-databases">Multiple databases, and remote databases</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="unigramlm.html">Tuning the Unigram Language Model: LMWeight</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="unigramlm.html#clamping-negative-value">Clamping Negative value</a></li>
+<li class="toctree-l2"><a class="reference internal" href="unigramlm.html#smoothing">Smoothing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="unigramlm.html#constructor-parameters">Constructor Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="unigramlm.html#selecting-weighting-scheme">Selecting Weighting scheme:</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="custom_weighting.html">Custom Weighting Schemes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="custom_weighting.html#implement-a-custom-weighting-scheme-that-requires-various-statistics">Implement a custom weighting scheme that requires various statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="admin_notes.html">Xapian Administrator&#8217;s Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="admin_notes.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="admin_notes.html#databases">Databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="admin_notes.html#backup-strategies">Backup Strategies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="admin_notes.html#inspecting-a-database">Inspecting a database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="admin_notes.html#database-maintenance">Database maintenance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scalability.html">Scalability</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="scalability.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scalability.html#benchmarking">Benchmarking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scalability.html#general-scalability-considerations">General Scalability Considerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="scalability.html#size-limits-in-xapian">Size Limits in Xapian</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="replication.html">Replication</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="replication.html#backend-support">Backend Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="replication.html#setting-up-replicated-databases">Setting up replicated databases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="replication.html#limitations">Limitations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="replication.html#alternative-approaches">Alternative approaches</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="serialisation.html">Serialisation of Queries and Documents</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="serialisation.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="serialisation.html#serialising-documents">Serialising Documents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="serialisation.html#serialising-queries">Serialising Queries</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="../howtos/learning_to_rank.html"
+                        title="previous chapter">Xapian Learning-to-Rank</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="postingsource.html"
+                        title="next chapter">Posting sources</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/advanced/index.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="postingsource.html" title="Posting sources"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../howtos/learning_to_rank.html" title="Xapian Learning-to-Rank"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2016 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

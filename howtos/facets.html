@@ -1,0 +1,392 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Facets &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../index.html" />
+    <link rel="up" title="How To..." href="index.html" />
+    <link rel="next" title="Sorting" href="sorting.html" />
+    <link rel="prev" title="Range queries" href="range_queries.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="sorting.html" title="Sorting"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="range_queries.html" title="Range queries"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">How To...</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="facets">
+<h1><a class="toc-backref" href="#id1">Facets</a><a class="headerlink" href="#facets" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="table-of-contents">
+<p class="topic-title first">Table of contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#facets" id="id1">Facets</a><ul>
+<li><a class="reference internal" href="#implementation" id="id2">Implementation</a><ul>
+<li><a class="reference internal" href="#indexing" id="id3">Indexing</a></li>
+<li><a class="reference internal" href="#querying" id="id4">Querying</a></li>
+<li><a class="reference internal" href="#restricting-by-facets" id="id5">Restricting by Facets</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#limitations" id="id6">Limitations</a></li>
+<li><a class="reference internal" href="#in-development" id="id7">In Development</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<p>Xapian provides functionality which allows you to dynamically generate
+complete lists of values which feature in matching documents. For example,
+colour, manufacturer, size values are good candidates for faceting.</p>
+<p>There are numerous potential uses this can be put to, but a common one is
+to offer the user the ability to narrow down their search by filtering it
+to only include documents with a particular value of a particular category.
+This is often referred to as <cite>faceted search</cite>.</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">string and numeric facets</p>
+</div>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">grouping</p>
+</div>
+<div class="admonition-todo admonition" id="index-2">
+<p class="first admonition-title">Todo</p>
+<p class="last">selecting which facets to show</p>
+</div>
+<div class="section" id="implementation">
+<h2><a class="toc-backref" href="#id2">Implementation</a><a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>Faceting works against information stored in <a class="reference internal" href="../concepts/indexing/values.html"><span class="doc">document value slots</span></a>
+and, when executed, provides a list of the unique values for
+that slot together with a count of the number of times each value occurs.</p>
+<div class="section" id="indexing">
+<h3><a class="toc-backref" href="#id3">Indexing</a><a class="headerlink" href="#indexing" title="Permalink to this headline">¶</a></h3>
+<p>No additional work is needed to implement faceted searching, except to
+ensure that the values you wish to use in facets are stored as
+document values.</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">index</span><span class="p">(</span><span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">datapath</span><span class="p">,</span> <span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">dbpath</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="c1">// Hardcode field offsets for simplicity.</span>
+    <span class="k">const</span> <span class="kt">size_t</span> <span class="n">FIELD_ID_NUMBER</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="k">const</span> <span class="kt">size_t</span> <span class="n">FIELD_TITLE</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+    <span class="k">const</span> <span class="kt">size_t</span> <span class="n">FIELD_MAKER</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+    <span class="k">const</span> <span class="kt">size_t</span> <span class="n">FIELD_DESCRIPTION</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span>
+    <span class="k">const</span> <span class="kt">size_t</span> <span class="n">FIELD_COLLECTION</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+
+    <span class="c1">// Create or open the database we&#39;re going to be writing to.</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">WritableDatabase</span> <span class="n">db</span><span class="p">(</span><span class="n">dbpath</span><span class="p">,</span> <span class="n">Xapian</span><span class="o">::</span><span class="n">DB_CREATE_OR_OPEN</span><span class="p">);</span>
+
+    <span class="c1">// Set up a TermGenerator that we&#39;ll use in indexing.</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">TermGenerator</span> <span class="n">termgenerator</span><span class="p">;</span>
+    <span class="n">termgenerator</span><span class="p">.</span><span class="n">set_stemmer</span><span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">Stem</span><span class="p">(</span><span class="s">&quot;en&quot;</span><span class="p">));</span>
+
+    <span class="n">ifstream</span> <span class="n">csv</span><span class="p">(</span><span class="n">datapath</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+    <span class="n">vector</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">fields</span><span class="p">;</span>
+    <span class="n">csv_parse_line</span><span class="p">(</span><span class="n">csv</span><span class="p">,</span> <span class="n">fields</span><span class="p">);</span>
+
+    <span class="c1">// Check the CSV header line matches our hard-code offsets.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_ID_NUMBER</span><span class="p">)</span> <span class="o">!=</span> <span class="s">&quot;id_NUMBER&quot;</span> <span class="o">||</span>
+	<span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_TITLE</span><span class="p">)</span> <span class="o">!=</span> <span class="s">&quot;TITLE&quot;</span> <span class="o">||</span>
+	<span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_DESCRIPTION</span><span class="p">)</span> <span class="o">!=</span> <span class="s">&quot;DESCRIPTION&quot;</span> <span class="o">||</span>
+	<span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_COLLECTION</span><span class="p">)</span> <span class="o">!=</span> <span class="s">&quot;COLLECTION&quot;</span> <span class="o">||</span>
+	<span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_MAKER</span><span class="p">)</span> <span class="o">!=</span> <span class="s">&quot;MAKER&quot;</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// The CSV format doesn&#39;t match what we expect.</span>
+	<span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;CSV format has changed!&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+	<span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">while</span> <span class="p">(</span><span class="n">csv_parse_line</span><span class="p">(</span><span class="n">csv</span><span class="p">,</span> <span class="n">fields</span><span class="p">))</span> <span class="p">{</span>
+	<span class="c1">// &#39;fields&#39; is a vector mapping from field number to value.</span>
+	<span class="c1">// We look up fields with the &#39;at&#39; method so we get an exception</span>
+	<span class="c1">// if that field isn&#39;t set.</span>
+	<span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">description</span> <span class="o">=</span> <span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_DESCRIPTION</span><span class="p">);</span>
+	<span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">title</span> <span class="o">=</span> <span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_TITLE</span><span class="p">);</span>
+	<span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">identifier</span> <span class="o">=</span> <span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_ID_NUMBER</span><span class="p">);</span>
+	<span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">collection</span> <span class="o">=</span> <span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_COLLECTION</span><span class="p">);</span>
+	<span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">maker</span> <span class="o">=</span> <span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_MAKER</span><span class="p">);</span>
+
+	<span class="c1">// We make a document and tell the term generator to use this.</span>
+	<span class="n">Xapian</span><span class="o">::</span><span class="n">Document</span> <span class="n">doc</span><span class="p">;</span>
+	<span class="n">termgenerator</span><span class="p">.</span><span class="n">set_document</span><span class="p">(</span><span class="n">doc</span><span class="p">);</span>
+
+	<span class="c1">// Index each field with a suitable prefix.</span>
+	<span class="n">termgenerator</span><span class="p">.</span><span class="n">index_text</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;S&quot;</span><span class="p">);</span>
+	<span class="n">termgenerator</span><span class="p">.</span><span class="n">index_text</span><span class="p">(</span><span class="n">description</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;XD&quot;</span><span class="p">);</span>
+
+	<span class="c1">// Index fields without prefixes for general search.</span>
+	<span class="n">termgenerator</span><span class="p">.</span><span class="n">index_text</span><span class="p">(</span><span class="n">title</span><span class="p">);</span>
+	<span class="n">termgenerator</span><span class="p">.</span><span class="n">increase_termpos</span><span class="p">();</span>
+	<span class="n">termgenerator</span><span class="p">.</span><span class="n">index_text</span><span class="p">(</span><span class="n">description</span><span class="p">);</span>
+
+	<span class="c1">// Add the collection as a value in slot 0.</span>
+	<span class="n">doc</span><span class="p">.</span><span class="n">add_value</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">collection</span><span class="p">);</span>
+
+	<span class="c1">// Add the maker as a value in slot 1.</span>
+	<span class="n">doc</span><span class="p">.</span><span class="n">add_value</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">maker</span><span class="p">);</span>
+
+	<span class="c1">// Store all the fields for display purposes.</span>
+	<span class="n">doc</span><span class="p">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">identifier</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> <span class="n">title</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> <span class="n">description</span><span class="p">);</span>
+
+	<span class="c1">// We use the identifier to ensure each object ends up in the</span>
+	<span class="c1">// database only once no matter how many times we run the</span>
+	<span class="c1">// indexer.</span>
+	<span class="n">string</span> <span class="n">idterm</span> <span class="o">=</span> <span class="s">&quot;Q&quot;</span> <span class="o">+</span> <span class="n">identifier</span><span class="p">;</span>
+	<span class="n">doc</span><span class="p">.</span><span class="n">add_boolean_term</span><span class="p">(</span><span class="n">idterm</span><span class="p">);</span>
+	<span class="n">db</span><span class="p">.</span><span class="n">replace_document</span><span class="p">(</span><span class="n">idterm</span><span class="p">,</span> <span class="n">doc</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Here we&#8217;re using two value slots: 0 contains the collection, and 1
+contains the name of whoever made the object. We know from the
+documentation of the dataset that both from fixed and curated lists,
+so we don&#8217;t have to worry about normalising the values before using
+them as facets. Let&#8217;s run that to build a dataset with document values
+suitable for faceting:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ g++ `xapian-config --cxxflags` code/c++/index_facets.cc support.cc -o built/index_facets `xapian-config --libs`
+$ ./index_facets data/100-objects-v1.csv db
+</pre></div>
+</div>
+</div>
+<div class="section" id="querying">
+<h3><a class="toc-backref" href="#id4">Querying</a><a class="headerlink" href="#querying" title="Permalink to this headline">¶</a></h3>
+<p>To query, Xapian uses the concept of spies to observe
+slots of matched documents during a search.</p>
+<p>The procedure works in three steps: first, you create a spy
+(instance of <code class="docutils literal"><span class="pre">Xapian::ValueCountMatchSpy</span></code>)
+for each slot you want the facets; second, you bind each spy to the
+<code class="docutils literal"><span class="pre">Xapian::Enquire</span></code> using <code class="docutils literal"><span class="pre">add_matchspy(spy)</span></code>;
+third, after the search was performed, you retrieve the results that
+each spy observed. This is an example of how this is done:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span>    <span class="c1">// Set up a spy to inspect the MAKER value at slot 1</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">ValueCountMatchSpy</span> <span class="n">spy</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="n">enquire</span><span class="p">.</span><span class="n">add_matchspy</span><span class="p">(</span><span class="o">&amp;</span><span class="n">spy</span><span class="p">);</span>
+
+    <span class="c1">// And print out something about each match.</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">MSet</span> <span class="n">mset</span> <span class="o">=</span> <span class="n">enquire</span><span class="p">.</span><span class="n">get_mset</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">pagesize</span><span class="p">,</span> <span class="mi">100</span><span class="p">);</span>
+
+    <span class="n">clog</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;&#39;&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">querystring</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;&#39;[&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">offset</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">offset</span> <span class="o">+</span> <span class="n">pagesize</span>
+	 <span class="o">&lt;&lt;</span> <span class="s">&quot;] =&quot;</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">MSetIterator</span> <span class="n">m</span> <span class="o">=</span> <span class="n">mset</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span> <span class="n">m</span> <span class="o">!=</span> <span class="n">mset</span><span class="p">.</span><span class="n">end</span><span class="p">();</span> <span class="o">++</span><span class="n">m</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">Xapian</span><span class="o">::</span><span class="n">docid</span> <span class="n">did</span> <span class="o">=</span> <span class="o">*</span><span class="n">m</span><span class="p">;</span>
+	<span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">m</span><span class="p">.</span><span class="n">get_rank</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;: #&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">setfill</span><span class="p">(</span><span class="sc">&#39;0&#39;</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">setw</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">did</span>
+	     <span class="o">&lt;&lt;</span> <span class="sc">&#39; &#39;</span><span class="p">;</span>
+
+	<span class="k">const</span> <span class="kt">size_t</span> <span class="n">DOC_FIELD_TITLE</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+	<span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">data</span> <span class="o">=</span> <span class="n">m</span><span class="p">.</span><span class="n">get_document</span><span class="p">().</span><span class="n">get_data</span><span class="p">();</span>
+	<span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">get_field</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">DOC_FIELD_TITLE</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+	<span class="c1">// Log the document id.</span>
+	<span class="n">clog</span> <span class="o">&lt;&lt;</span> <span class="sc">&#39; &#39;</span> <span class="o">&lt;&lt;</span> <span class="n">did</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">clog</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+
+    <span class="c1">// Fetch and display the spy values</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">TermIterator</span> <span class="n">facet</span> <span class="o">=</span> <span class="n">spy</span><span class="p">.</span><span class="n">values_begin</span><span class="p">();</span>
+         <span class="n">facet</span> <span class="o">!=</span> <span class="n">spy</span><span class="p">.</span><span class="n">values_end</span><span class="p">();</span>
+	 <span class="o">++</span><span class="n">facet</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Facet: &quot;</span> <span class="o">&lt;&lt;</span> <span class="o">*</span><span class="n">facet</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;; count: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">facet</span><span class="p">.</span><span class="n">get_termfreq</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Here we&#8217;re faceting on value slot 1, which is the object maker. After
+you get the MSet, you can ask the spy for the facets it found,
+including the frequency. Note that although we&#8217;re generally only
+showing ten matches, we use a parameter to <code class="docutils literal"><span class="pre">get_mset()</span></code>
+called <cite>checkatleast</cite>, so that the entire dataset is considered and the facet
+frequencies are correct. See <a class="reference internal" href="#limitations">Limitations</a> for some discussion of the
+implications of this. Here&#8217;s the output:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ g++ `xapian-config --cxxflags` code/c++/search_facets.cc support.cc -o built/search_facets `xapian-config --libs`
+$ ./search_facets db clock
+1: #044 Two-dial clock by the Self-Winding Clock Co; as used on the
+2: #096 Clock with Hipp pendulum (an electric driven clock with Hipp
+3: #012 Assembled and unassembled EXA electric clock kit
+4: #098 &#39;Pond&#39; electric clock movement (no dial)
+5: #083 Harrison&#39;s eight-day wooden clock movement, 1715.
+6: #005 &quot;Ever Ready&quot; ceiling clock
+7: #039 Electric clock of the Bain type
+8: #061 Van der Plancke master clock
+9: #064 Morse electrical clock, dial mechanism
+10: #052 Reconstruction of Dondi&#39;s Astronomical Clock, 1974
+Facet: Bain, Alexander; count: 3
+Facet: Bloxam, J. M.; count: 1
+Facet: Braun (maker); count: 1
+Facet: British Horo-Electric Ltd. (maker); count: 1
+Facet: British Vacuum Cleaner and Engineering Co. Ltd., Magneto Time division (maker); count: 1
+Facet: EXA; count: 1
+Facet: Ever Ready Co. (maker); count: 2
+Facet: Ferranti Ltd.; count: 1
+Facet: Galilei, Galileo, 1564-1642; Galilei, Vincenzio, 1606-1649; count: 1
+Facet: Harrison, John (maker); count: 1
+Facet: Hipp, M.; count: 1
+Facet: La Précision Cie; count: 1
+Facet: Lund, J.; count: 1
+Facet: Morse, J. S.; count: 1
+Facet: Self Winding Clock Company; count: 1
+Facet: Self-Winding Clock Co. (maker); count: 1
+Facet: Synchronome Co. Ltd. (maker); count: 2
+Facet: Thwaites and Reed Ltd.; count: 1
+Facet: Thwaites and Reed Ltd. (maker); count: 1
+Facet: Viviani, Vincenzo; count: 1
+Facet: Vulliamy, Benjamin, 1747-1811; count: 1
+Facet: Whitefriars Glass Ltd. (maker); count: 1
+&#39;clock&#39;[0:10] = 44 96 12 98 83 5 39 61 64 52
+</pre></div>
+</div>
+<p>Note that the spy will give you facets in alphabetical order, not in
+order of frequency; if you want to show the most frequent first you
+should use the <cite>top_values</cite> iterator (<code class="docutils literal"><span class="pre">begin_top_values()</span></code>
+in C++ and some other languages).</p>
+<p>If you want to work with multiple facets, you can register multiple
+<code class="docutils literal"><span class="pre">Xapian::ValueCountMatchSpy</span></code> objects before running
+<code class="docutils literal"><span class="pre">get_mset()</span></code>, although each additional one will have some
+performance impact.</p>
+</div>
+<div class="section" id="restricting-by-facets">
+<h3><a class="toc-backref" href="#id5">Restricting by Facets</a><a class="headerlink" href="#restricting-by-facets" title="Permalink to this headline">¶</a></h3>
+<p>If you&#8217;re using the facets to offer the user choices for narrowing down
+their search results, you then need to be able to apply a suitable filter.</p>
+<p>For a single value, you could use <code class="docutils literal"><span class="pre">Xapian::Query::OP_VALUE_RANGE</span></code> with
+the same start and end, or <code class="docutils literal"><span class="pre">Xapian::MatchDecider</span></code>, but it&#8217;s probably most
+efficient to also index the categories as suitably prefixed boolean terms
+and use those for filtering.</p>
+</div>
+</div>
+<div class="section" id="limitations">
+<h2><a class="toc-backref" href="#id6">Limitations</a><a class="headerlink" href="#limitations" title="Permalink to this headline">¶</a></h2>
+<p>The accuracy of Xapian&#8217;s faceting capability is determined by the number
+of records that are examined by Xapian whilst it is searching. You can
+control this number by specifying the <cite>checkatleast</cite> parameter to
+<code class="docutils literal"><span class="pre">get_mset()</span></code>; however it is important to be aware that
+increasing this number may have an effect on overall query performance,
+although a typical sized database is unlikely to see adverse effects.</p>
+</div>
+<div class="section" id="in-development">
+<h2><a class="toc-backref" href="#id7">In Development</a><a class="headerlink" href="#in-development" title="Permalink to this headline">¶</a></h2>
+<p>Some additional features currently in development may benefit users of
+facets. These are:</p>
+<ul class="simple">
+<li>Multiple values in slots: this will allow you to have a single value slot
+(e.g. colour) which contains multiple values (e.g. red, blue).  This will
+also allow you to create a facet by colour which is aware of these
+multiple values, giving counts for both red and blue.</li>
+</ul>
+<div class="admonition-todo admonition" id="index-3">
+<p class="first admonition-title">Todo</p>
+<p class="last">This is misleading - it&#8217;s already possibly to dead with a facet
+with multiple values like this.  We should document how rather than
+seeming to imply you can&#8217;t currently.</p>
+</div>
+<ul class="simple">
+<li>Bucketing: this provides a means to group together numeric facets, so that
+a single facet can contain a range of values (e.g. price ranges).</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Facets</a><ul>
+<li><a class="reference internal" href="#implementation">Implementation</a><ul>
+<li><a class="reference internal" href="#indexing">Indexing</a></li>
+<li><a class="reference internal" href="#querying">Querying</a></li>
+<li><a class="reference internal" href="#restricting-by-facets">Restricting by Facets</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#limitations">Limitations</a></li>
+<li><a class="reference internal" href="#in-development">In Development</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="range_queries.html"
+                        title="previous chapter">Range queries</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="sorting.html"
+                        title="next chapter">Sorting</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/howtos/facets.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="sorting.html" title="Sorting"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="range_queries.html" title="Range queries"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >How To...</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2016 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Terms &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../../index.html" />
+    <link rel="up" title="Indexing concepts" href="index.html" />
+    <link rel="next" title="Term Generator" href="termgenerator.html" />
+    <link rel="prev" title="Documents" href="documents.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="termgenerator.html" title="Term Generator"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="documents.html" title="Documents"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Core concepts</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Indexing concepts</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="terms">
+<h1>Terms<a class="headerlink" href="#terms" title="Permalink to this headline">¶</a></h1>
+<p><cite>Terms</cite> are the basis of most searches in Xapian.  At its simplest, a
+search is a process of comparing the terms specified in a query against the
+terms in each document, and returning a list of the documents which match
+the best.</p>
+<p>A term will often be generated for each word in a piece of text, usually
+by applying some form of normalisation (it&#8217;s usual to at least change all
+the characters to be lowercase).  There are many useful strategies for
+producing terms.</p>
+<p>Often the same word will occur multiple times in a piece of text.  Xapian
+calls this number the <cite>within document frequency</cite> and stores it in the
+database.  It is often useful when searching to give documents in which a
+term occurs more often a higher weight.</p>
+<p>It is also possible to store a set of positions along with each term; this
+allows the positions at which words occur to be used when searching, e.g.,
+in a phrase query.  These positions are usually stored as word counts
+(rather than character or byte counts).</p>
+<p>The database also keeps track of a couple of statistics about the frequency
+of terms in the database; the <cite>term frequency</cite> is the number of documents
+that a particular term occurs in,  and the <cite>collection frequency</cite> is the
+total number of times that term occurs (i.e., the sum of the within
+document frequencies for the term).</p>
+<div class="section" id="stemmers">
+<h2>Stemmers<a class="headerlink" href="#stemmers" title="Permalink to this headline">¶</a></h2>
+<p>A common form of normalisation is <cite>stemming</cite>.  This process converts
+various different forms of words to a single form: for example, converting
+a plural (e.g., &#8220;birds&#8221;) and a singular form of a word (&#8220;bird&#8221;) to the same
+thing (in this case, both are converted to &#8220;bird&#8221;).</p>
+<p>Note that the output of a stemmer is not necessarily a valid word; what is
+important is that words with closely related meaning are converted to the
+same form, allowing a search to find them.  For example, both the word
+&#8220;happy&#8221; and the word &#8220;happiness&#8221; are converted to the form &#8220;happi&#8221;, so if a
+document contained &#8220;happiness&#8221;, a search for &#8220;happy&#8221; would find that
+document.</p>
+<p>The rules applied by a stemmer are dependent on the language of the text;
+Xapian includes <a class="reference external" href="https://xapian.org/docs/apidoc/html/classXapian_1_1Stem.html">stemmers for more than a dozen languages</a>
+(and for some languages there is a choice of stemmers), built using the
+<a class="reference external" href="http://snowballstem.org/">Snowball language</a>. We&#8217;d like to add
+stemmers for more languages - see the Snowball site for information on how
+to contribute.</p>
+</div>
+<div class="section" id="fields-and-term-prefixes">
+<span id="term-prefixes"></span><h2>Fields and term prefixes<a class="headerlink" href="#fields-and-term-prefixes" title="Permalink to this headline">¶</a></h2>
+<p>It&#8217;s common to think of a document as consisting, rather than just a single
+quantity of text, of a number of <em>fields</em>, each of which itself is made up
+of terms. These could be actual fields from a structured document, such as
+the title, or they could be metadata such as colour of fruit
+(so you could search for only red fruit). The first allows normal free text
+searching, but constrained to a particular field &#8211; perhaps you want to
+search for all documents whose author is called &#8220;Sam&#8221;; the second can be used
+for <a class="reference internal" href="../../howtos/boolean_filters.html"><span class="doc">filtering documents</span></a>, a technique
+referred to as <em>boolean filtering</em> (and hence those prefixed terms are called
+<em>boolean terms</em>).</p>
+<p>Xapian supports a convention for representing fields in the database by
+mapping each field to a <em>term prefix</em>, which are one or more capital letters;
+this is to avoid confusion
+(which could adversely affect search results) with normal terms generated
+from words, which are lowercased by the <a class="reference internal" href="termgenerator.html"><span class="doc">Term Generator</span></a>.
+(If you need a capital letter after the prefix of your term, you can separate
+it from the prefix using a colon &#8216;:&#8217;.)</p>
+<p>When using the <a class="reference internal" href="../search/queryparser.html"><span class="doc">Query Parser</span></a>, you can map from &#8220;human
+understandable&#8221; prefixes (which act as field names) in the query to the term
+prefixes used in the database, and you can specify a default prefix to control
+any parts of the query that don&#8217;t specify a field.
+You can map one field name to multiple term prefixes, so if you want to search
+across multiple fields by default, instead of setting a default prefix you can
+map an empty field name to several term prefixes.</p>
+<p>Xapian has <a class="reference external" href="https://xapian.org/docs/omega/termprefixes.html">conventions for term prefixes</a> used for common fields,
+which originally came from Omega. For instance, &#8216;A&#8217; is used for author, &#8216;S&#8217;
+for subject/title, and so forth.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Terms</a><ul>
+<li><a class="reference internal" href="#stemmers">Stemmers</a></li>
+<li><a class="reference internal" href="#fields-and-term-prefixes">Fields and term prefixes</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="documents.html"
+                        title="previous chapter">Documents</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="termgenerator.html"
+                        title="next chapter">Term Generator</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/concepts/indexing/terms.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="termgenerator.html" title="Term Generator"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="documents.html" title="Documents"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Core concepts</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Indexing concepts</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2016 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

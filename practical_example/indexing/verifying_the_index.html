@@ -1,0 +1,170 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Verifying the index using xapian-delve &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../../index.html" />
+    <link rel="up" title="Indexing" href="index.html" />
+    <link rel="next" title="Updating the database" href="updating_the_database.html" />
+    <link rel="prev" title="Let’s write some code" href="writing_the_code.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="updating_the_database.html" title="Updating the database"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="writing_the_code.html" title="Let’s write some code"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >A practical example</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Indexing</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="verifying-the-index-using-xapian-delve">
+<h1>Verifying the index using xapian-delve<a class="headerlink" href="#verifying-the-index-using-xapian-delve" title="Permalink to this headline">¶</a></h1>
+<p>Xapian comes with a handy utility called <cite>xapian-delve</cite> which can be used to
+inspect a database, so let&#8217;s look at the one you just built. If you just
+pass a database path as a parameter you&#8217;ll get an overview: how many documents,
+average term length, and some other statistics:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ xapian-delve db
+UUID = 1820ef0a-055b-4946-ae73-67aa4ef5c226
+number of documents = 100
+average document length = 100.58
+document length lower bound = 33
+document length upper bound = 251
+highest document id ever used = 100
+has positional information = true
+</pre></div>
+</div>
+<p>You can also look at an individual document, using Xapian&#8217;s docid (<code class="docutils literal"><span class="pre">-d</span></code>
+means output document data as well):</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ xapian-delve -r 1 -d db       # output has been reformatted
+Data for record #1:
+{
+ &quot;MEASUREMENTS&quot;: &quot;&quot;,
+ &quot;DESCRIPTION&quot;: &quot;Ansonia Sunwatch (pocket compas dial)&quot;,
+ &quot;PLACE_MADE&quot;: &quot;New York county, New York state, United States&quot;,
+ &quot;id_NUMBER&quot;: &quot;1974-100&quot;,
+ &quot;WHOLE_PART&quot;: &quot;WHOLE&quot;,
+ &quot;TITLE&quot;: &quot;Ansonia Sunwatch (pocket compas dial)&quot;,
+ &quot;DATE_MADE&quot;: &quot;1922-1939&quot;,
+ &quot;COLLECTION&quot;: &quot;SCM - Time Measurement&quot;,
+ &quot;ITEM_NAME&quot;: &quot;Pocket horizontal sundial&quot;,
+ &quot;MATERIALS&quot;: &quot;&quot;,
+ &quot;MAKER&quot;: &quot;Ansonia Clock Co.&quot;
+}
+Term List for record #1: Q1974-100 Sansonia Scompas Sdial Spocket
+Ssunwatch XDansonia XDcompass XDdial XDpocket XDsunwatch ZSansonia
+ZScompas ZSdial ZSpocket ZSsunwatch ZXDansonia ZXDcompas ZXDdial
+ZXDpocket ZXDsunwatch Zansonia Zcompass Zdial Zpocket Zsunwatch
+ansonia compass dial pocket sunwatch
+</pre></div>
+</div>
+<p>You can also go the other way, starting with a term and finding both
+statistics and which documents it indexes:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ xapian-delve -t Stime db
+Posting List for term `Stime&#39; (termfreq 4, collfreq 4, wdf_max 4):
+41 56 58 65
+</pre></div>
+</div>
+<p>This means you can look documents up by identifier:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ xapian-delve -t Q1974-100 db
+Posting List for term `Q1974-100&#39; (termfreq 1, collfreq 1, wdf_max 1):
+1
+</pre></div>
+</div>
+<p><code class="docutils literal"><span class="pre">xapian-delve</span></code> is frequently useful if you aren&#8217;t getting the behaviour you
+expect from a search system, to check that the database contains the
+documents and terms you expect.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="writing_the_code.html"
+                        title="previous chapter">Let&#8217;s write some code</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="updating_the_database.html"
+                        title="next chapter">Updating the database</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/practical_example/indexing/verifying_the_index.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="updating_the_database.html" title="Updating the database"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="writing_the_code.html" title="Let’s write some code"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >A practical example</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Indexing</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2016 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

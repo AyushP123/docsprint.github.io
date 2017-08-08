@@ -1,0 +1,187 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Let’s write some code &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../../index.html" />
+    <link rel="up" title="Indexing" href="index.html" />
+    <link rel="next" title="Verifying the index using xapian-delve" href="verifying_the_index.html" />
+    <link rel="prev" title="The index plan" href="index_plan.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="verifying_the_index.html" title="Verifying the index using xapian-delve"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index_plan.html" title="The index plan"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >A practical example</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Indexing</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="let-s-write-some-code">
+<h1>Let&#8217;s write some code<a class="headerlink" href="#let-s-write-some-code" title="Permalink to this headline">¶</a></h1>
+<p>Here&#8217;s the significant part of some example code to implement this index plan.</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">index</span><span class="p">(</span><span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">datapath</span><span class="p">,</span> <span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">dbpath</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="c1">// Hardcode field offsets for simplicity.</span>
+    <span class="k">const</span> <span class="kt">size_t</span> <span class="n">FIELD_ID_NUMBER</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="k">const</span> <span class="kt">size_t</span> <span class="n">FIELD_TITLE</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+    <span class="k">const</span> <span class="kt">size_t</span> <span class="n">FIELD_DESCRIPTION</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span>
+
+    <span class="c1">// Create or open the database we&#39;re going to be writing to.</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">WritableDatabase</span> <span class="n">db</span><span class="p">(</span><span class="n">dbpath</span><span class="p">,</span> <span class="n">Xapian</span><span class="o">::</span><span class="n">DB_CREATE_OR_OPEN</span><span class="p">);</span>
+
+    <span class="c1">// Set up a TermGenerator that we&#39;ll use in indexing.</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">TermGenerator</span> <span class="n">termgenerator</span><span class="p">;</span>
+    <span class="n">termgenerator</span><span class="p">.</span><span class="n">set_stemmer</span><span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">Stem</span><span class="p">(</span><span class="s">&quot;en&quot;</span><span class="p">));</span>
+
+    <span class="n">ifstream</span> <span class="n">csv</span><span class="p">(</span><span class="n">datapath</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+    <span class="n">vector</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">fields</span><span class="p">;</span>
+    <span class="n">csv_parse_line</span><span class="p">(</span><span class="n">csv</span><span class="p">,</span> <span class="n">fields</span><span class="p">);</span>
+
+    <span class="c1">// Check the CSV header line matches our hard-code offsets.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_ID_NUMBER</span><span class="p">)</span> <span class="o">!=</span> <span class="s">&quot;id_NUMBER&quot;</span> <span class="o">||</span>
+	<span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_TITLE</span><span class="p">)</span> <span class="o">!=</span> <span class="s">&quot;TITLE&quot;</span> <span class="o">||</span>
+	<span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_DESCRIPTION</span><span class="p">)</span> <span class="o">!=</span> <span class="s">&quot;DESCRIPTION&quot;</span><span class="p">)</span> <span class="p">{</span>
+	<span class="c1">// The CSV format doesn&#39;t match what we expect.</span>
+	<span class="n">cerr</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;CSV format has changed!&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+	<span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">while</span> <span class="p">(</span><span class="n">csv_parse_line</span><span class="p">(</span><span class="n">csv</span><span class="p">,</span> <span class="n">fields</span><span class="p">))</span> <span class="p">{</span>
+	<span class="c1">// &#39;fields&#39; is a vector mapping from field number to value.</span>
+	<span class="c1">// We look up fields with the &#39;at&#39; method so we get an exception</span>
+	<span class="c1">// if that field isn&#39;t set.</span>
+	<span class="c1">//</span>
+	<span class="c1">// We&#39;re just going to use DESCRIPTION, TITLE and id_NUMBER.</span>
+	<span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">description</span> <span class="o">=</span> <span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_DESCRIPTION</span><span class="p">);</span>
+	<span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">title</span> <span class="o">=</span> <span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_TITLE</span><span class="p">);</span>
+	<span class="k">const</span> <span class="n">string</span> <span class="o">&amp;</span> <span class="n">identifier</span> <span class="o">=</span> <span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_ID_NUMBER</span><span class="p">);</span>
+
+	<span class="c1">// We make a document and tell the term generator to use this.</span>
+	<span class="n">Xapian</span><span class="o">::</span><span class="n">Document</span> <span class="n">doc</span><span class="p">;</span>
+	<span class="n">termgenerator</span><span class="p">.</span><span class="n">set_document</span><span class="p">(</span><span class="n">doc</span><span class="p">);</span>
+
+	<span class="c1">// Index each field with a suitable prefix.</span>
+	<span class="n">termgenerator</span><span class="p">.</span><span class="n">index_text</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;S&quot;</span><span class="p">);</span>
+	<span class="n">termgenerator</span><span class="p">.</span><span class="n">index_text</span><span class="p">(</span><span class="n">description</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;XD&quot;</span><span class="p">);</span>
+
+	<span class="c1">// Index fields without prefixes for general search.</span>
+	<span class="n">termgenerator</span><span class="p">.</span><span class="n">index_text</span><span class="p">(</span><span class="n">title</span><span class="p">);</span>
+	<span class="n">termgenerator</span><span class="p">.</span><span class="n">increase_termpos</span><span class="p">();</span>
+	<span class="n">termgenerator</span><span class="p">.</span><span class="n">index_text</span><span class="p">(</span><span class="n">description</span><span class="p">);</span>
+
+	<span class="c1">// Store all the fields for display purposes.</span>
+	<span class="n">doc</span><span class="p">.</span><span class="n">set_data</span><span class="p">(</span><span class="n">identifier</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> <span class="n">title</span> <span class="o">+</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">+</span> <span class="n">description</span><span class="p">);</span>
+
+	<span class="c1">// We use the identifier to ensure each object ends up in the</span>
+	<span class="c1">// database only once no matter how many times we run the</span>
+	<span class="c1">// indexer.</span>
+	<span class="n">string</span> <span class="n">idterm</span> <span class="o">=</span> <span class="s">&quot;Q&quot;</span> <span class="o">+</span> <span class="n">identifier</span><span class="p">;</span>
+	<span class="n">doc</span><span class="p">.</span><span class="n">add_boolean_term</span><span class="p">(</span><span class="n">idterm</span><span class="p">);</span>
+	<span class="n">db</span><span class="p">.</span><span class="n">replace_document</span><span class="p">(</span><span class="n">idterm</span><span class="p">,</span> <span class="n">doc</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>A full copy of this code is available in <a class="reference external" href="https://github.com/xapian/xapian-docsprint/blob/master/code/c++/index1.cc">code/c++/index1.cc</a>.</p>
+<p>You can run this code to index a sample data file (held in
+<a class="reference external" href="https://github.com/xapian/xapian-docsprint/blob/master/data/100-objects-v1.csv">data/100-objects-v1.csv</a>) to a database at path <code class="docutils literal"><span class="pre">db</span></code> as follows:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ g++ `xapian-config --cxxflags` code/c++/index1.cc support.cc -o built/index1 `xapian-config --libs`
+$ ./index1 data/100-objects-v1.csv db
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index_plan.html"
+                        title="previous chapter">The index plan</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="verifying_the_index.html"
+                        title="next chapter">Verifying the index using xapian-delve</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/practical_example/indexing/writing_the_code.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="verifying_the_index.html" title="Verifying the index using xapian-delve"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index_plan.html" title="The index plan"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >A practical example</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Indexing</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2016 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

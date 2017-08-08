@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Scalability &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../index.html" />
+    <link rel="up" title="Advanced features" href="index.html" />
+    <link rel="next" title="Replication" href="replication.html" />
+    <link rel="prev" title="Xapian Administrator’s Guide" href="admin_notes.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="replication.html" title="Replication"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="admin_notes.html" title="Xapian Administrator’s Guide"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Advanced features</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="scalability">
+<h1><a class="toc-backref" href="#id1">Scalability</a><a class="headerlink" href="#scalability" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="table-of-contents">
+<p class="topic-title first">Table of contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#scalability" id="id1">Scalability</a><ul>
+<li><a class="reference internal" href="#introduction" id="id2">Introduction</a></li>
+<li><a class="reference internal" href="#benchmarking" id="id3">Benchmarking</a></li>
+<li><a class="reference internal" href="#general-scalability-considerations" id="id4">General Scalability Considerations</a></li>
+<li><a class="reference internal" href="#size-limits-in-xapian" id="id5">Size Limits in Xapian</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id2">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>People often want to know how Xapian will scale. The short answer is
+&#8220;very well&#8221; - an early version of the software powered the (now defunct)
+Webtop search engine, which offered a search over around 500 million web
+pages (around 1.5 terabytes of database files). Searches took less than
+a second.</p>
+<p>In terms of current deployments, <a class="reference external" href="http://search.gmane.org/">gmane</a>
+indexes and searches nearly 100 million mail messages on a single server
+at the time of writing (2012), and we&#8217;ve had user reports of systems with
+more than 250 million documents.</p>
+<p>If you&#8217;ve questions about scalability not covered in this document, ask
+on the mailing lists - people using Xapian to search large databases may
+be able to make further suggestions.</p>
+</div>
+<div class="section" id="benchmarking">
+<h2><a class="toc-backref" href="#id3">Benchmarking</a><a class="headerlink" href="#benchmarking" title="Permalink to this headline">¶</a></h2>
+<p>One effect to be aware of when designing benchmarks is that queries will
+be a lot slower when nothing is cached. So the first few queries on a
+database which hasn&#8217;t been searched recently will be unrepresentatively
+slow compared to the typical case.</p>
+<p>In real use, pretty much all the non-leaf blocks from the B-trees being
+used for the search will be cached pretty quickly, as well as many
+commonly used leaf blocks.</p>
+</div>
+<div class="section" id="general-scalability-considerations">
+<h2><a class="toc-backref" href="#id4">General Scalability Considerations</a><a class="headerlink" href="#general-scalability-considerations" title="Permalink to this headline">¶</a></h2>
+<p>In a large search application, I/O will end up being the limiting
+factor. So you want a RAID setup optimised for fast reading, lots of RAM
+in the box so the OS can cache lots of disk blocks (the access patterns
+typically mean that you only need to cache a few percent of the database
+to eliminate most disk cache misses).</p>
+<p>It also means that reducing the database size is usually a win. The
+backend compresses the information in the tables in ways which
+work well given the nature of the data but aren&#8217;t too expensive to
+unpack (e.g. lists of sorted docids are stored as differences with
+smaller values encoded in fewer bytes). There is further potential for
+improving the encodings used.</p>
+<p>Another way to reduce disk I/O is to run databases through
+xapian-compact. The Btree manager usually leaves some spare space in
+each block so that updates are more efficient (though there are
+heuristics which will fill blocks fuller when they detect a long
+sequence of sequential insertions, which means adding documents to the
+end of an empty database will produce fairly compact tables, apart from
+the postlist table). Compacting makes all blocks as full as possible,
+and so reduces the size of the database. It also produces a database
+with revision 1 which is inherently faster to search. The penalty is
+that updates will be slow for a while, as they&#8217;ll result in a lot of
+block splitting when all blocks are full.</p>
+<p>Splitting the data over several databases is generally a good strategy.
+Once each has finished being updated, compact it to make it small and
+faster to search.</p>
+<p>A multiple-database scheme works particularly well if you want a rolling
+web index where the contents of the oldest database can be rechecked and
+live links put back into a new database which, once built, replaces the
+oldest database. It&#8217;s also good for a news-type application where older
+documents should expire from the index.</p>
+</div>
+<div class="section" id="size-limits-in-xapian">
+<h2><a class="toc-backref" href="#id5">Size Limits in Xapian</a><a class="headerlink" href="#size-limits-in-xapian" title="Permalink to this headline">¶</a></h2>
+<p>The glass backend (which is currently the default and recommended
+backend) stores the indexes in several files containing Btree tables. If
+you&#8217;re indexing with positional information (for phrase searching) the
+term positions table is usually the largest.</p>
+<p>You should also consider <a class="reference internal" href="../concepts/indexing/limitations.html#index-limitations"><span class="std std-ref">Index limitations</span></a> and
+<a class="reference internal" href="../concepts/search/search_limitations.html#search-limitations"><span class="std std-ref">Search-time Limitations</span></a>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Scalability</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#benchmarking">Benchmarking</a></li>
+<li><a class="reference internal" href="#general-scalability-considerations">General Scalability Considerations</a></li>
+<li><a class="reference internal" href="#size-limits-in-xapian">Size Limits in Xapian</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="admin_notes.html"
+                        title="previous chapter">Xapian Administrator&#8217;s Guide</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="replication.html"
+                        title="next chapter">Replication</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/advanced/scalability.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="replication.html" title="Replication"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="admin_notes.html" title="Xapian Administrator’s Guide"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Advanced features</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2016 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

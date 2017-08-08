@@ -1,0 +1,225 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Custom Weighting Schemes &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../index.html" />
+    <link rel="up" title="Advanced features" href="index.html" />
+    <link rel="next" title="Xapian Administrator’s Guide" href="admin_notes.html" />
+    <link rel="prev" title="Tuning the Unigram Language Model: LMWeight" href="unigramlm.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="admin_notes.html" title="Xapian Administrator’s Guide"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="unigramlm.html" title="Tuning the Unigram Language Model: LMWeight"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Advanced features</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="custom-weighting-schemes">
+<span id="custom-weighting"></span><h1>Custom Weighting Schemes<a class="headerlink" href="#custom-weighting-schemes" title="Permalink to this headline">¶</a></h1>
+<p>You can also implement your own weighting scheme, provided it can be expressed
+in the form of a sum over the matching terms, plus an extra term which depends
+on term-independent statistics (such as the normalised document length).</p>
+<p>Currently it is only possible to implement custom weighting schemes in C++.
+The API could probably be wrapped with a bit of effort, but performance is
+likely to be disappointing as the <code class="docutils literal"><span class="pre">get_sumpart()</span></code> method
+gets called a lot (approximately once per matching term in each considered
+document), so the overhead of routing a method call from C++ to the wrapped
+language will matter.</p>
+<p>For example, here&#8217;s an implementation of &#8220;coordinate matching&#8221; - each matching
+term scores one point:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">CoordinateWeight</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Xapian</span><span class="o">::</span><span class="n">Weight</span> <span class="p">{</span>
+  <span class="k">public</span><span class="o">:</span>
+    <span class="n">CoordinateWeight</span> <span class="o">*</span> <span class="n">clone</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="k">new</span> <span class="n">CoordinateWeight</span><span class="p">;</span> <span class="p">}</span>
+    <span class="n">CoordinateWeight</span><span class="p">()</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="o">~</span><span class="n">CoordinateWeight</span><span class="p">()</span> <span class="p">{</span> <span class="p">}</span>
+
+    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="s">&quot;Coord&quot;</span><span class="p">;</span> <span class="p">}</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">serialise</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">();</span> <span class="p">}</span>
+    <span class="n">CoordinateWeight</span> <span class="o">*</span> <span class="n">unserialise</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="o">&amp;</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="n">CoordinateWeight</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="kt">double</span> <span class="n">get_sumpart</span><span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">termcount</span><span class="p">,</span> <span class="n">Xapian</span><span class="o">::</span><span class="n">doclength</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="kt">double</span> <span class="n">get_maxpart</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">1</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="kt">double</span> <span class="n">get_sumextra</span><span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">doclength</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">0</span><span class="p">;</span> <span class="p">}</span>
+    <span class="kt">double</span> <span class="n">get_maxextra</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">0</span><span class="p">;</span> <span class="p">}</span>
+
+    <span class="kt">bool</span> <span class="n">get_sumpart_needs_doclength</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="nb">false</span><span class="p">;</span> <span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<div class="section" id="implement-a-custom-weighting-scheme-that-requires-various-statistics">
+<h2>Implement a custom weighting scheme that requires various statistics<a class="headerlink" href="#implement-a-custom-weighting-scheme-that-requires-various-statistics" title="Permalink to this headline">¶</a></h2>
+<p>The Coordinate scheme given above does not require any statistics. However,
+custom weighting schemes that require various statistics such as average
+document length in the database, the query length, total number of
+documents in the collection etc. can also be implemented.</p>
+<p>For that, the weighting scheme subclassed from <code class="docutils literal"><span class="pre">Xapian::Weight</span></code> simply needs
+to &#8220;tell&#8221; <code class="docutils literal"><span class="pre">Xapian::Weight</span></code> which statistics it will be needing. This is done by
+calling the <code class="docutils literal"><span class="pre">need_stat(STATISTIC</span> <span class="pre">REQUIRED)</span></code> method in the
+constructor of the subclassed weighting scheme. Note however, that only those
+statistics which are absolutely required must be asked for as collecting
+statistics is expensive.  For a full list of statistics currently available
+from <code class="docutils literal"><span class="pre">Xapian::Weight</span></code> and the enumerators required to access them, please
+refer to the <a class="reference external" href="https://xapian.org/docs/sourcedoc/html/classXapian_1_1Weight.html#ae3c11f1d2d96a18e0eb9b9b31c5c5479">API documentation</a>.</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Sort out doxygen visibility of protected stat_flags so the link above can be to the apidocs</p>
+</div>
+<p>The statistics can then be obtained by the subclass by simply calling the
+corresponding function of the <code class="docutils literal"><span class="pre">Xapian::Weight</span></code> class. For eg:- The document
+frequency (Term frequency) of the term can be obtained by calling
+<code class="docutils literal"><span class="pre">get_termfreq()</span></code>. For a full list of functions required to
+obtain various statistics, refer to
+<a class="reference external" href="https://xapian.org/docs/sourcedoc/html/weight_8h_source.html#l00277">the xapian/weight.h header file</a>.</p>
+<p>Example:- Consider a simple weighting scheme such as a pseudo Tf-Idf weighting
+scheme which returns the document weight as the product of the within document
+frequency of the term and the inverse of the document frequency
+of the term (Inverse of the number of documents the term appears in).</p>
+<p>The implementation will be as follows:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">TfIdfWeight</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Xapian</span><span class="o">::</span><span class="n">Weight</span> <span class="p">{</span>
+  <span class="k">public</span><span class="o">:</span>
+    <span class="n">TfIdfWeight</span> <span class="o">*</span> <span class="n">clone</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="k">new</span> <span class="n">TfIdfWeight</span><span class="p">;</span> <span class="p">}</span>
+    <span class="n">TfIdfWeight</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">need_stat</span><span class="p">(</span><span class="n">WDF</span><span class="p">);</span>
+        <span class="n">need_stat</span><span class="p">(</span><span class="n">TERMFREQ</span><span class="p">);</span>
+        <span class="n">need_stat</span><span class="p">(</span><span class="n">WDF_MAX</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="o">~</span><span class="n">TfIdfWeight</span><span class="p">()</span> <span class="p">{</span> <span class="p">}</span>
+
+    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="s">&quot;TfIdf&quot;</span><span class="p">;</span> <span class="p">}</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">serialise</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">();</span> <span class="p">}</span>
+    <span class="n">TfIdfWeight</span> <span class="o">*</span> <span class="n">unserialise</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="o">&amp;</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="n">TfIdfWeight</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="kt">double</span> <span class="n">get_sumpart</span><span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">termcount</span> <span class="n">wdf</span><span class="p">,</span> <span class="n">Xapian</span><span class="o">::</span><span class="n">doclength</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+        <span class="n">Xapian</span><span class="o">::</span><span class="n">doccount</span> <span class="n">df</span> <span class="o">=</span> <span class="n">get_termfreq</span><span class="p">();</span>
+        <span class="kt">double</span> <span class="nf">wdf_double</span><span class="p">(</span><span class="n">wdf</span><span class="p">);</span>
+        <span class="kt">double</span> <span class="n">wt</span> <span class="o">=</span> <span class="n">wdf_double</span> <span class="o">/</span> <span class="n">df</span><span class="p">;</span>
+        <span class="k">return</span> <span class="n">wt</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="kt">double</span> <span class="n">get_maxpart</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+        <span class="n">Xapian</span><span class="o">::</span><span class="n">doccount</span> <span class="n">df</span> <span class="o">=</span> <span class="n">get_termfreq</span><span class="p">();</span>
+        <span class="kt">double</span> <span class="nf">max_wdf</span><span class="p">(</span><span class="n">get_wdf_upper_bound</span><span class="p">());</span>
+        <span class="kt">double</span> <span class="n">max_weight</span> <span class="o">=</span> <span class="n">max_wdf</span> <span class="o">/</span> <span class="n">df</span><span class="p">;</span>
+        <span class="k">return</span> <span class="n">max_weight</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="kt">double</span> <span class="n">get_sumextra</span><span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">doclength</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">0</span><span class="p">;</span> <span class="p">}</span>
+    <span class="kt">double</span> <span class="n">get_maxextra</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">0</span><span class="p">;</span> <span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Note: The <code class="docutils literal"><span class="pre">get_maxpart()</span></code> method returns an upper bound on
+the weight returned by <code class="docutils literal"><span class="pre">get_sumpart()</span></code>. In order to do
+that, it requires the <code class="docutils literal"><span class="pre">WDF_MAX</span></code> statistic (the maximum
+wdf of the term among all documents).</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Custom Weighting Schemes</a><ul>
+<li><a class="reference internal" href="#implement-a-custom-weighting-scheme-that-requires-various-statistics">Implement a custom weighting scheme that requires various statistics</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="unigramlm.html"
+                        title="previous chapter">Tuning the Unigram Language Model: LMWeight</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="admin_notes.html"
+                        title="next chapter">Xapian Administrator&#8217;s Guide</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/advanced/custom_weighting.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="admin_notes.html" title="Xapian Administrator’s Guide"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="unigramlm.html" title="Tuning the Unigram Language Model: LMWeight"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Advanced features</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2016 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

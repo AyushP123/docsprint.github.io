@@ -1,0 +1,166 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Updating the database &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../../index.html" />
+    <link rel="up" title="Indexing" href="index.html" />
+    <link rel="next" title="Searching" href="../searching/index.html" />
+    <link rel="prev" title="Verifying the index using xapian-delve" href="verifying_the_index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../searching/index.html" title="Searching"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="verifying_the_index.html" title="Verifying the index using xapian-delve"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >A practical example</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Indexing</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="updating-the-database">
+<h1>Updating the database<a class="headerlink" href="#updating-the-database" title="Permalink to this headline">¶</a></h1>
+<p>If you look back at the verifying step of the database, you may notice
+that the first item we have indexed has the word &#8216;compass&#8217; spelled
+incorrectly, which means that we will need to either update just that
+document, or to re-index the entire database.</p>
+<p>Reindexing the database can be done immediately using the <a class="reference external" href="https://github.com/xapian/xapian-docsprint/blob/master/code/c++/index1.cc">index1.cc</a> script
+we used for the initial indexing; this is because we are using an external
+ID for each document we add to the database, taken from the <cite>id_NUMBER</cite>
+field from the original data set. We then pass this to the <code class="docutils literal"><span class="pre">Xapian::Database::replace_document()</span></code>
+method, which updates if there&#8217;s already a document under that external ID,
+or adds a document to the database otherwise.</p>
+<p>In fact, because of this, <a class="reference external" href="https://github.com/xapian/xapian-docsprint/blob/master/code/c++/index1.cc">index1.cc</a> can update just part of the
+database. Just give it a file with only the rows that correspond to
+documents that need updating. Everything else in the database will be
+left untouched.</p>
+<div class="section" id="deleting-documents">
+<h2>Deleting documents<a class="headerlink" href="#deleting-documents" title="Permalink to this headline">¶</a></h2>
+<p>It is also possible to delete documents from the index using the
+<code class="docutils literal"><span class="pre">Xapian::Database::delete_document()</span></code> method on a
+<code class="docutils literal"><span class="pre">Xapian::WritableDatabase</span></code> object. This can be done either by Xapian docid
+or using unique ID terms, as with <code class="docutils literal"><span class="pre">Xapian::Database::replace_document()</span></code>.</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<p>A copy of this code is available in <a class="reference external" href="https://github.com/xapian/xapian-docsprint/blob/master/code/c++/delete1.cc">code/c++/delete1.cc</a>.</p>
+<p>Then we just run our deletion tool, giving it identifiers taken from
+the <cite>id_NUMBER</cite> field in the data set:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ g++ `xapian-config --cxxflags` code/c++/delete1.cc support.cc -o built/delete1 `xapian-config --libs`
+$ ./delete1 db 1953-448 1985-438
+</pre></div>
+</div>
+<p>After that, we expect to see two fewer documents in our database using xapian-delve:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ xapian-delve db
+UUID = 1820ef0a-055b-4946-ae73-67aa4ef5c226
+number of documents = 98
+average document length = 100.041
+document length lower bound = 33
+document length upper bound = 251
+highest document id ever used = 100
+has positional information = true
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Updating the database</a><ul>
+<li><a class="reference internal" href="#deleting-documents">Deleting documents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="verifying_the_index.html"
+                        title="previous chapter">Verifying the index using xapian-delve</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../searching/index.html"
+                        title="next chapter">Searching</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/practical_example/indexing/updating_the_database.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../searching/index.html" title="Searching"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="verifying_the_index.html" title="Verifying the index using xapian-delve"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >A practical example</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Indexing</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2016 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

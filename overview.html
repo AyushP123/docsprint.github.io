@@ -1,0 +1,229 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Introduction &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="index.html" />
+    <link rel="next" title="C++ Specific Notes" href="language_specific.html" />
+    <link rel="prev" title="Getting Started with Xapian 1.4" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="language_specific.html" title="C++ Specific Notes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Getting Started with Xapian 1.4"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Getting Started with Xapian v1.4</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="introduction">
+<span id="overview"></span><h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>Xapian is an open source search engine library, which allows developers to
+add advanced indexing and search facilities to their own applications.</p>
+<p>This document aims to be a guide to getting up and running with your first
+database, explaining basic concepts and providing code examples of the
+library&#8217;s core functionality.</p>
+<p>If you just want to follow our code examples, you can skip the chapter on &#8220;Core
+Concepts&#8221; and go straight to <a class="reference internal" href="practical_example/index.html#a-practical-example"><span class="std std-ref">A practical example</span></a> - but you should
+probably make sure you have Xapian installed first!</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you&#8217;re looking for a way of getting a search system running without
+having to write any code, you may want to look at <a class="reference external" href="https://xapian.org/docs/omega/">Omega</a>, Xapian&#8217;s pre-packaged web search
+application. It&#8217;s designed so that as your needs grow, you can extend or
+even replace it without having to change your database; the structure
+that Omega sets up will work when you start writing code directly
+against Xapian.</p>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>There are two pieces of Xapian you need to follow this guide: the
+library itself, and support for the language you&#8217;re going to be
+using.  This guide was originally written with examples in <a class="reference external" href="https://www.python.org/">Python</a>,
+and we&#8217;ve made a start on full translations into Java, <a class="reference external" href="https://php.net/">PHP</a> and C++.
+Help with completing these translations and with translating the examples
+into other languages would be most welcome.</p>
+<p>This guide documents Xapian 1.4 (except where a different version is explicitly
+mentioned) so you&#8217;ll find it easier to follow if you use a version from the 1.4
+release series.  So let&#8217;s get that onto your system.</p>
+<div class="section" id="installation-on-debian-or-ubuntu">
+<h3>Installation on Debian or Ubuntu<a class="headerlink" href="#installation-on-debian-or-ubuntu" title="Permalink to this headline">¶</a></h3>
+<p>Neither Debian nor Ubuntu yet have a stable release with Xapian 1.4 packages.
+If you&#8217;re using Debian unstable or testing, there are 1.4 packages there.
+For Ubuntu you can install packages from our <a class="reference external" href="https://launchpad.net/~xapian-backports/+archive/ubuntu/ppa">PPA</a>.</p>
+<p>Once you have a suitable repo configured, then you can do
+one of the following depending on whether you want to work through the examples
+in Python or C++:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ sudo apt-get install python-xapian
+$ sudo apt-get install libxapian-dev
+</pre></div>
+</div>
+<p>Packages of the PHP bindings aren&#8217;t available due to a licence
+compatibility issue, but you can <a class="reference external" href="https://trac.xapian.org/wiki/FAQ/PHP%20Bindings%20Package">build your own packages</a>.</p>
+</div>
+<div class="section" id="installation-on-other-systems">
+<h3>Installation on other systems<a class="headerlink" href="#installation-on-other-systems" title="Permalink to this headline">¶</a></h3>
+<p>Many operating systems have packages available to make Xapian easy to
+install; information is available on <a class="reference external" href="https://xapian.org/download">our download page</a>. This covers
+most popular Linux distributions, FreeBSD, Mac OS (Python and C++
+only) and Windows using Microsoft Visual Studio.</p>
+<p id="compile-from-source">If you&#8217;re using a different operating system, you will need to compile
+from source, which should work on any Unix-like operating system,
+and Windows using any one of Cygwin, MSYS+mingw or MSVC. Source code
+is again available from our download page, as are additional Makefiles
+for building using MSVC on Windows.</p>
+</div>
+</div>
+<div class="section" id="datasets-and-example-code">
+<h2>Datasets and example code<a class="headerlink" href="#datasets-and-example-code" title="Permalink to this headline">¶</a></h2>
+<p>If you want to run the code we use to demonstrate Xapian&#8217;s features
+(and we recommend you do), you&#8217;ll need both the code itself and the
+two datasets we use.</p>
+<p>The example code is available in Python, PHP, C++ and Java so far, although
+there&#8217;s only a complete set of examples for Python at present.</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">finalise datasets and code and link to them from here</p>
+</div>
+<p>For now, you&#8217;ll want to grab the <a class="reference external" href="https://github.com/xapian/xapian-docsprint">documentation source from github</a> which
+contains the example code in each language, and also the data files listed
+in the next paragraph (both are in the &#8220;code&#8221; subdirectory).</p>
+<p>The first dataset is the first 100 objects taken from museum
+catalogue data released by the <a class="reference external" href="http://www.sciencemuseum.org.uk">Science Museum</a>.  We downloaded this data from their API
+site, but this has since shut down.  The second dataset we have curated
+ourselves from information on Wikipedia about the 50 <a class="reference external" href="https://en.wikipedia.org/wiki/U.S._state">US States</a>. Both are provided as
+gzipped CSV files. The first dataset is released under the <a class="reference external" href="https://creativecommons.org/licenses/by-nc-sa/3.0/">Creative
+Commons license Attribution-NonCommercial-ShareAlike</a> license, and the
+second under <a class="reference external" href="https://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0</a>.</p>
+<p>These datasets are in the git repo which holds the source for this
+documentation - you can also view them online on <a class="reference external" href="https://github.com/xapian/xapian-docsprint/tree/master/data">github</a>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference external" href="https://raw.githubusercontent.com/xapian/xapian-docsprint/master/data/100-objects-v1.csv">100-objects-v1.csv</a></li>
+<li><a class="reference external" href="https://raw.githubusercontent.com/xapian/xapian-docsprint/master/data/100-objects-v2.csv">100-objects-v2.csv</a></li>
+<li><a class="reference external" href="https://raw.githubusercontent.com/xapian/xapian-docsprint/master/data/states.csv">states.csv</a></li>
+</ul>
+</div></blockquote>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">link to here from every howto and everything that needs the data files and example code</p>
+</div>
+</div>
+<div class="section" id="contributing">
+<h2>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference external" href="https://github.com/xapian/xapian-docsprint">source for this documentation</a> is being kept on github; the
+best way to contribute is to add issues, comments and pull requests there.
+We&#8217;re monitoring IRC during the sprint sessions (and in general) so you can
+also contact us on channel #xapian on irc.freenode.net [<a class="reference external" href="https://webchat.freenode.net/?channels=%23xapian">webchat link</a>].</p>
+<p>To be able to generate this documentation from a git checkout, you&#8217;ll need
+the <a class="reference external" href="http://sphinx-doc.org/">Sphinx documentation tool</a>.  If you&#8217;re using
+Debian or Ubuntu or another Debian-derived distro, you can get this by
+installing either the <cite>python-sphinx</cite> or <cite>python3-sphinx</cite> package.  Once
+you have Sphinx installed, you can generate HTML output with <code class="docutils literal"><span class="pre">make</span> <span class="pre">html</span></code>
+(for a full list of available formats, see <code class="docutils literal"><span class="pre">make</span></code>).</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Introduction</a><ul>
+<li><a class="reference internal" href="#installation">Installation</a><ul>
+<li><a class="reference internal" href="#installation-on-debian-or-ubuntu">Installation on Debian or Ubuntu</a></li>
+<li><a class="reference internal" href="#installation-on-other-systems">Installation on other systems</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#datasets-and-example-code">Datasets and example code</a></li>
+<li><a class="reference internal" href="#contributing">Contributing</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Getting Started with Xapian 1.4</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="language_specific.html"
+                        title="next chapter">C++ Specific Notes</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/overview.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="language_specific.html" title="C++ Specific Notes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Getting Started with Xapian 1.4"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Getting Started with Xapian v1.4</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2016 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

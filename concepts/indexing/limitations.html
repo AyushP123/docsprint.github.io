@@ -1,0 +1,191 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Index limitations &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../../index.html" />
+    <link rel="up" title="Indexing concepts" href="index.html" />
+    <link rel="next" title="Search concepts" href="../search/index.html" />
+    <link rel="prev" title="Values" href="values.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../search/index.html" title="Search concepts"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="values.html" title="Values"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Core concepts</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Indexing concepts</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="index-limitations">
+<span id="id1"></span><h1>Index limitations<a class="headerlink" href="#index-limitations" title="Permalink to this headline">¶</a></h1>
+<p>There are a few limitations on the data which can be stored in an index;
+these rarely get in the way, and are generally easy to work around if they
+do, but it&#8217;s worth knowing about them.</p>
+<div class="section" id="term-length">
+<h2>Term length<a class="headerlink" href="#term-length" title="Permalink to this headline">¶</a></h2>
+<p>Terms are limited to 245 bytes in length (at least with the &#8220;glass&#8221; and
+&#8220;chert&#8221; backends), but each zero byte in a term is currently internally encoded
+as two bytes, so the limit is less for a term which contains zero bytes.
+It&#8217;s rarely useful to have longer terms, but one situation where it can be
+is if you&#8217;re using something like a URL as an ID term; <a class="reference external" href="https://trac.xapian.org/wiki/FAQ/UniqueIds">there is some
+discussion of this as one of our FAQs</a>.</p>
+</div>
+<div class="section" id="document-data-length">
+<h2>Document data length<a class="headerlink" href="#document-data-length" title="Permalink to this headline">¶</a></h2>
+<p>The document data has a length limit which depends on the blocksize and
+some other factors, but with the default block size of 8KB, the document
+data length limit will be somewhere over 100MB.</p>
+</div>
+<div class="section" id="document-value-length">
+<h2>Document value length<a class="headerlink" href="#document-value-length" title="Permalink to this headline">¶</a></h2>
+<p>Document values are limited in length to a similar length to document
+data, but for performance reasons you probably wouldn&#8217;t want to store
+document values longer than a few tens of bytes, as reading multiple
+100MB+ values during the match would be rather slow.</p>
+</div>
+<div class="section" id="document-id">
+<h2>Document ID<a class="headerlink" href="#document-id" title="Permalink to this headline">¶</a></h2>
+<p>Document IDs are (currently) 32-bit by default which limits you to
+2<sup>32</sup>-1 (nearly 4.3 billion) documents in a database.  Document IDs for
+deleted documents aren&#8217;t reused for when automatically assigning a new document
+ID, so this limit also includes documents you&#8217;ve deleted.  You can effectively
+reclaim such no-longer-used document IDs by compacting the database.</p>
+<p>If you configure xapian-core with <cite>&#8211;enable-64bit-docid</cite> then 64-bit docids
+will be used instead.  You may well also want to make termcounts 64-bit
+with <cite>&#8211;enabl-64bit-termcount</cite>.  Note that these options change type sizes and
+hence the ABI of the library.</p>
+</div>
+<div class="section" id="b-tree-block-number">
+<h2>B-tree block number<a class="headerlink" href="#b-tree-block-number" title="Permalink to this headline">¶</a></h2>
+<p>The B-trees use a 32-bit unsigned block count.  The default blocksize is
+8KB which limits you to 32TB tables.  You can increase the blocksize if
+this is a problem, but it&#8217;s best to do it before you create the database as
+otherwise you need to use xapian-compact to make a compacted copy of the
+database with the new blocksize, and that will take a while for such a
+large database.  The maximum blocksize currently allowed is 64K, which
+limits you to 256TB tables.</p>
+</div>
+<div class="section" id="os-file-size">
+<h2>OS file size<a class="headerlink" href="#os-file-size" title="Permalink to this headline">¶</a></h2>
+<p>Any operating or filing system limit on file size obviously applies to
+Xapian.  On modern platforms, you&#8217;re unlikely to hit these limits (e.g. on
+Linux, <a class="reference external" href="https://en.wikipedia.org/wiki/Ext4">ext4</a> allows files up to 16TB and filesystems up to 1EB, while <a class="reference external" href="https://en.wikipedia.org/wiki/Btrfs">btrfs</a>
+allows files and filesystems up to 16EB (figures from Wikipedia).</p>
+</div>
+<div class="section" id="total-document-length-limit">
+<h2>Total document length limit<a class="headerlink" href="#total-document-length-limit" title="Permalink to this headline">¶</a></h2>
+<p>Glass stores the total length (i.e. number of terms) of all the documents
+in a database so it can calculate the average document length.  This is
+currently stored as an unsigned 64-bit quantity so you&#8217;re almost certain
+to hit another limit first.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Index limitations</a><ul>
+<li><a class="reference internal" href="#term-length">Term length</a></li>
+<li><a class="reference internal" href="#document-data-length">Document data length</a></li>
+<li><a class="reference internal" href="#document-value-length">Document value length</a></li>
+<li><a class="reference internal" href="#document-id">Document ID</a></li>
+<li><a class="reference internal" href="#b-tree-block-number">B-tree block number</a></li>
+<li><a class="reference internal" href="#os-file-size">OS file size</a></li>
+<li><a class="reference internal" href="#total-document-length-limit">Total document length limit</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="values.html"
+                        title="previous chapter">Values</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../search/index.html"
+                        title="next chapter">Search concepts</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/concepts/indexing/limitations.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../search/index.html" title="Search concepts"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="values.html" title="Values"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Core concepts</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Indexing concepts</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2016 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,305 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>How to change how documents are scored &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../index.html" />
+    <link rel="up" title="How To..." href="index.html" />
+    <link rel="next" title="Iterate through all documents" href="iterate_all_docs.html" />
+    <link rel="prev" title="Synonyms" href="synonyms.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="iterate_all_docs.html" title="Iterate through all documents"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="synonyms.html" title="Synonyms"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">How To...</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="how-to-change-how-documents-are-scored">
+<h1><a class="toc-backref" href="#id1">How to change how documents are scored</a><a class="headerlink" href="#how-to-change-how-documents-are-scored" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="table-of-contents">
+<p class="topic-title first">Table of contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#how-to-change-how-documents-are-scored" id="id1">How to change how documents are scored</a><ul>
+<li><a class="reference internal" href="#built-in-weighting-schemes" id="id2">Built-in weighting schemes</a><ul>
+<li><a class="reference internal" href="#bm25weight" id="id3">BM25Weight</a></li>
+<li><a class="reference internal" href="#bm25plusweight" id="id4">BM25PlusWeight</a></li>
+<li><a class="reference internal" href="#pl2weight" id="id5">PL2Weight</a></li>
+<li><a class="reference internal" href="#pl2plusweight" id="id6">PL2PLusWeight</a></li>
+<li><a class="reference internal" href="#lmweight-unigram-language-modelling" id="id7">LMWeight (Unigram language modelling)</a></li>
+<li><a class="reference internal" href="#tfidfweight" id="id8">TfIdfWeight</a></li>
+<li><a class="reference internal" href="#tradweight" id="id9">TradWeight</a></li>
+<li><a class="reference internal" href="#boolweight" id="id10">BoolWeight</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#other-approaches" id="id11">Other approaches</a><ul>
+<li><a class="reference internal" href="#using-an-rset-to-modify-weights" id="id12">Using an RSet to modify weights</a></li>
+<li><a class="reference internal" href="#using-a-valueweightpostingsource" id="id13">Using a ValueWeightPostingSource</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<p>The easiest way to change document scoring is to change, or tune,
+the weighting scheme in use; Xapian provides a number of weighting schemes,
+including <code class="docutils literal"><span class="pre">BM25Weight</span></code>, <code class="docutils literal"><span class="pre">BM25PlusWeight</span></code>, <code class="docutils literal"><span class="pre">PL2Weight</span></code>, <code class="docutils literal"><span class="pre">PL2PlusWeight</span></code>,
+<code class="docutils literal"><span class="pre">LMWeight</span></code>, <code class="docutils literal"><span class="pre">TfIdfWeight</span></code>, <code class="docutils literal"><span class="pre">TradWeight</span></code> and <code class="docutils literal"><span class="pre">BoolWeight</span></code>
+(the default is BM25Weight).</p>
+<p>You can also <a class="reference internal" href="../advanced/custom_weighting.html#custom-weighting"><span class="std std-ref">implement your own</span></a>.</p>
+<div class="section" id="built-in-weighting-schemes">
+<h2><a class="toc-backref" href="#id2">Built-in weighting schemes</a><a class="headerlink" href="#built-in-weighting-schemes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="bm25weight">
+<h3><a class="toc-backref" href="#id3">BM25Weight</a><a class="headerlink" href="#bm25weight" title="Permalink to this headline">¶</a></h3>
+<p>The BM25 weighting formula which Xapian uses by default has a number of
+parameters.  We have picked some default parameter values which do a good job
+in general.  The optimal values of these parameters depend on the data being
+indexed and the type of queries being run, so you may be able to improve the
+effectiveness of your search system by adjusting these values, but it&#8217;s a
+fiddly process to tune them so people tend not to bother.</p>
+<div class="admonition-todo admonition" id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">Say something more useful about tuning the parameters!</p>
+</div>
+</div>
+<div class="section" id="bm25plusweight">
+<h3><a class="toc-backref" href="#id4">BM25PlusWeight</a><a class="headerlink" href="#bm25plusweight" title="Permalink to this headline">¶</a></h3>
+<p>The occurrences of a query term in very long documents may not be rewarded properly
+by BM25, and thus those very long documents could be overly penalized. In such cases,
+the BM25+ weighting formula is a useful improvement over the existing BM25 weighting
+formula. In BM25, it is easy to note that there is a strict upper bound (k1 + 1) for
+Term Frequency normalization. However, the other interesting direction, lower-bounding
+TF, has not been well addressed.</p>
+<p>BM25+ was originally proposed by Lv-Zhai in CIKM11 paper: <a class="reference external" href="http://sifaka.cs.uiuc.edu/czhai/pub/cikm11-bm25.pdf">Lower-Bounding Term Frequency
+Normalization</a>. BM25+ was derived from BM25 by lower-bounding TF and using all of the
+parameters of BM25 with an additional parameter &#8211; delta(δ). Experiments by Lv-Zhai have
+shown that BM25+ works very well with δ = 1.</p>
+</div>
+<div class="section" id="pl2weight">
+<h3><a class="toc-backref" href="#id5">PL2Weight</a><a class="headerlink" href="#pl2weight" title="Permalink to this headline">¶</a></h3>
+<p>PL2Weight implements the representative scheme of the Divergence from Randomness Framework
+This weighting scheme is useful for tasks that require early precision. It uses the
+Poisson approximation of the Binomial Probabilistic distribution (P),the Laplace method
+to find the after-effect of sampling (L) and the second wdf normalization to normalize the
+wdf in the document to the length of the document (H2).</p>
+<p>Document weight is controlled by parameter c. The default value of 1 for c is suitable
+for longer queries but it may need to be changed for shorter queries.</p>
+</div>
+<div class="section" id="pl2plusweight">
+<h3><a class="toc-backref" href="#id6">PL2PLusWeight</a><a class="headerlink" href="#pl2plusweight" title="Permalink to this headline">¶</a></h3>
+<p>Proposed by Lv-Zhai, PL2PlusWeight is the modified lower-bounded PL2 retrieval function of
+the Divergence from Randomness Framework with an additonal parameter delta in addition to the
+parameter c from the PL2 weighting function.</p>
+<p>Parmater delta is the pseudo tf value to control the scale of the tf lower bound. It can be tuned
+for e.g from 0.1 to 1.5 in increments of 0.1 or so. Although, PL2+ works effectively across collections
+with a fixed default value of 0.8.</p>
+</div>
+<div class="section" id="lmweight-unigram-language-modelling">
+<h3><a class="toc-backref" href="#id7">LMWeight (Unigram language modelling)</a><a class="headerlink" href="#lmweight-unigram-language-modelling" title="Permalink to this headline">¶</a></h3>
+<p>An important aspect of language model-based weighting is that, since not all
+terms appear in all documents (and hence the wdf of some terms is zero with
+respect to a given document), we have to employ smoothing to avoid problems.</p>
+<p>Xapian provides <a class="reference internal" href="../advanced/unigramlm.html#unigramlmweight"><span class="std std-ref">four different smoothing types</span></a>, which take further parameters
+to control the effects of smoothing; we have picked some default parameter
+values which do a good job, using two stage smoothing.</p>
+<p>The UnigramLM weighting formula is based on an original approach by Bruce Croft.
+It uses statistical language modelling; &#8216;unigram&#8217; in this case means that
+words are considered to occur independently.</p>
+<p>The Dirichlet prior method is one of the best performing language modeling approaches. Xapian
+now provides support for a modified Dirichlet prior method, namely Dir+ which is an improvement over
+the original as it is particularly more effective across web collections with very long documents
+(where document length is much larger than average document length).</p>
+</div>
+<div class="section" id="tfidfweight">
+<h3><a class="toc-backref" href="#id8">TfIdfWeight</a><a class="headerlink" href="#tfidfweight" title="Permalink to this headline">¶</a></h3>
+<p>TfIdfWeight implements the support for a number of <a class="reference external" href="http://nlp.stanford.edu/IR-book/html/htmledition/document-and-query-weighting-schemes-1.html">SMART normalization variants</a> of the tf-idf
+weighting scheme. These normalizations are specified by a three character string:</p>
+<div class="line-block">
+<div class="line">1. The first letter in each string specifies the normalization for the term frequency component (wdfn),</div>
+<div class="line">2. the second the normalization for the inverse document frequency component (idfn), and</div>
+<div class="line">3. the third the normalization used for the document weight (wtn).</div>
+</div>
+<p>Normalizations are specified by the first character of their name string:</p>
+<ol class="arabic">
+<li><div class="first line-block">
+<div class="line">&#8220;<strong>n</strong> one&#8221; : wdfn = wdf</div>
+<div class="line">&#8220;<strong>b</strong> oolean&#8221; (or sometimes binary) : wdfn = 1 if term is present in document else 0.</div>
+<div class="line">&#8220;<strong>s</strong> quare&#8221; : wdfn = wdf * wdf</div>
+<div class="line">&#8220;<strong>l</strong> og&#8221; : wdfn = 1 + ln (wdf)</div>
+<div class="line">&#8220;<strong>P</strong> ivoted&#8221; : wdfn = (1+log(1+log(wdf)))*(1/(1-slope+(slope*doclen/avg_len)))+delta [not in 1.4.x]</div>
+</div>
+</li>
+<li><div class="first line-block">
+<div class="line">&#8220;<strong>n</strong> one&#8221; : idfn = 1</div>
+<div class="line">&#8220;<strong>t</strong> fidf&#8221; : idfn = log (N / Termfreq) where N is the number of
+documents in collection and Termfreq is the number of documents</div>
+<div class="line">&#8220;<strong>p</strong> rob&#8221; : idfn = log ((N - Termfreq) / Termfreq)</div>
+<div class="line">&#8220;<strong>f</strong> req&#8221; : idfn = 1 / Termfreq</div>
+<div class="line">&#8220;<strong>s</strong> quared&#8221; : idfn = log (N / Termfreq) ^ 2</div>
+<div class="line">&#8220;<strong>P</strong> ivoted&#8221; : idfn = log ((N + 1) / Termfreq) [not in 1.4.x]</div>
+</div>
+</li>
+<li><div class="first line-block">
+<div class="line">&#8220;<strong>n</strong> one&#8221; : wtn = wdfn * idfn</div>
+</div>
+</li>
+</ol>
+<p>More recently supported normalization in TfIdfWeight is the pivoted (piv+) retrieval function
+which represents one of the best performing vector space models. Piv+ takes two parameters; slope and delta
+which are set to their default optimal values. You may want pass different candidate values ranging from 0.1
+to 1.5 and choose one which fits best to your system based upon corpus being used.  Piv+ isn&#8217;t supported
+by 1.4.x, it&#8217;s only in git master (and will be in the next release series) - it&#8217;s hard to backport because
+the two new parameters need to be stored by the TfIdfWeight class.</p>
+</div>
+<div class="section" id="tradweight">
+<h3><a class="toc-backref" href="#id9">TradWeight</a><a class="headerlink" href="#tradweight" title="Permalink to this headline">¶</a></h3>
+<p>TradWeight implements the original probabilistic weighting formula, which
+is essentially a special case of BM25 (it&#8217;s BM25 with k2 = 0, k3 = 0, b =
+1, and min_normlen = 0, except that all the weights are scaled by a
+constant factor).</p>
+</div>
+<div class="section" id="boolweight">
+<h3><a class="toc-backref" href="#id10">BoolWeight</a><a class="headerlink" href="#boolweight" title="Permalink to this headline">¶</a></h3>
+<p>BoolWeight assigns a weight of 0 to all documents, so the ordering is
+determined solely by other factors.</p>
+</div>
+</div>
+<div class="section" id="other-approaches">
+<h2><a class="toc-backref" href="#id11">Other approaches</a><a class="headerlink" href="#other-approaches" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="using-an-rset-to-modify-weights">
+<h3><a class="toc-backref" href="#id12">Using an RSet to modify weights</a><a class="headerlink" href="#using-an-rset-to-modify-weights" title="Permalink to this headline">¶</a></h3>
+<div class="admonition-todo admonition" id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">This needs writing; it&#8217;s also somewhat esoteric, and perhaps should be an
+advanced document or at least down-played.</p>
+</div>
+</div>
+<div class="section" id="using-a-valueweightpostingsource">
+<h3><a class="toc-backref" href="#id13">Using a ValueWeightPostingSource</a><a class="headerlink" href="#using-a-valueweightpostingsource" title="Permalink to this headline">¶</a></h3>
+<div class="admonition-todo admonition" id="index-2">
+<p class="first admonition-title">Todo</p>
+<p class="last">Combine ValueWeightPostingSource with OP_AND_MAYBE to add a constant weight
+for a particular (set of) document(s). This could be considered an advanced
+topic, so just a brief mention here and a complete document in advanced
+could be the best approach.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">How to change how documents are scored</a><ul>
+<li><a class="reference internal" href="#built-in-weighting-schemes">Built-in weighting schemes</a><ul>
+<li><a class="reference internal" href="#bm25weight">BM25Weight</a></li>
+<li><a class="reference internal" href="#bm25plusweight">BM25PlusWeight</a></li>
+<li><a class="reference internal" href="#pl2weight">PL2Weight</a></li>
+<li><a class="reference internal" href="#pl2plusweight">PL2PLusWeight</a></li>
+<li><a class="reference internal" href="#lmweight-unigram-language-modelling">LMWeight (Unigram language modelling)</a></li>
+<li><a class="reference internal" href="#tfidfweight">TfIdfWeight</a></li>
+<li><a class="reference internal" href="#tradweight">TradWeight</a></li>
+<li><a class="reference internal" href="#boolweight">BoolWeight</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#other-approaches">Other approaches</a><ul>
+<li><a class="reference internal" href="#using-an-rset-to-modify-weights">Using an RSet to modify weights</a></li>
+<li><a class="reference internal" href="#using-a-valueweightpostingsource">Using a ValueWeightPostingSource</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="synonyms.html"
+                        title="previous chapter">Synonyms</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="iterate_all_docs.html"
+                        title="next chapter">Iterate through all documents</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/howtos/weighting_scheme.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="iterate_all_docs.html" title="Iterate through all documents"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="synonyms.html" title="Synonyms"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >How To...</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2016 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>
