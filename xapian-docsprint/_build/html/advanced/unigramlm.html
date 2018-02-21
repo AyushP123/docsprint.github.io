@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tuning the Unigram Language Model: LMWeight &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../index.html" />
+    <link rel="up" title="Advanced features" href="index.html" />
+    <link rel="next" title="Custom Weighting Schemes" href="custom_weighting.html" />
+    <link rel="prev" title="Posting sources" href="postingsource.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="custom_weighting.html" title="Custom Weighting Schemes"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="postingsource.html" title="Posting sources"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Advanced features</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="tuning-the-unigram-language-model-lmweight">
+<span id="unigramlmweight"></span><h1><a class="toc-backref" href="#id1">Tuning the Unigram Language Model: LMWeight</a><a class="headerlink" href="#tuning-the-unigram-language-model-lmweight" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="table-of-contents">
+<p class="topic-title first">Table of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#tuning-the-unigram-language-model-lmweight" id="id1">Tuning the Unigram Language Model: LMWeight</a><ul>
+<li><a class="reference internal" href="#clamping-negative-value" id="id2">Clamping Negative value</a></li>
+<li><a class="reference internal" href="#smoothing" id="id3">Smoothing</a><ul>
+<li><a class="reference internal" href="#dirichlet-prior-smoothing" id="id4">Dirichlet Prior Smoothing:</a></li>
+<li><a class="reference internal" href="#jelinek-mercer-smoothing" id="id5">Jelinek Mercer Smoothing:</a></li>
+<li><a class="reference internal" href="#absolute-discounting-smoothing" id="id6">Absolute Discounting Smoothing:</a></li>
+<li><a class="reference internal" href="#two-stage-smoothing-default" id="id7">Two Stage Smoothing(Default):</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#constructor-parameters" id="id8">Constructor Parameters</a></li>
+<li><a class="reference internal" href="#selecting-weighting-scheme" id="id9">Selecting Weighting scheme:</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<p>Unigram language modelling weighing scheme ranks document based on ability
+to generate query from document language model. Unigram language model is
+intuitive for user as they can think of term possible in document and add them
+to query which will increase performance of weighing scheme in this setting.</p>
+<div class="section" id="clamping-negative-value">
+<h2><a class="toc-backref" href="#id2">Clamping Negative value</a><a class="headerlink" href="#clamping-negative-value" title="Permalink to this headline">¶</a></h2>
+<p>Since unigram language model differs from xapian way of weighing scheme as xapian
+only support sum of various individual parts. Unigram language model have accommodated
+product of probabilities by summing log of individual parts. Due to introduction of log
+in probabilities a clamping factor to clamp negative value of log to positive is also
+introduced.</p>
+<p>The default value for the clamping parameter is the document length upper bound,
+but the API user can adjust this value using the param_log parameter of the LMWeight
+constructor.</p>
+</div>
+<div class="section" id="smoothing">
+<h2><a class="toc-backref" href="#id3">Smoothing</a><a class="headerlink" href="#smoothing" title="Permalink to this headline">¶</a></h2>
+<p>Unigram Language model foundation is document language model but due to length of document
+document language model are usually sparse and affect the weight calculation for the documents
+hence smoothing with collection frequency and document length is done. Xapian Implements
+following Smoothing techniques:-</p>
+<div class="section" id="dirichlet-prior-smoothing">
+<h3><a class="toc-backref" href="#id4">Dirichlet Prior Smoothing:</a><a class="headerlink" href="#dirichlet-prior-smoothing" title="Permalink to this headline">¶</a></h3>
+<p>Smoothing based on document size, because longer document require less smoothing
+as they more accurately estimate language model.
+Dirichlet Prior Smoothing is better at Estimation Role.</p>
+<p>DP Smoothing technique is better for title or smaller queries as it is better
+in estimation role.</p>
+<p>Optimal Smoothing parameter</p>
+<p><strong>param_smoothing1</strong> - Small,Long Query - 2000</p>
+</div>
+<div class="section" id="jelinek-mercer-smoothing">
+<h3><a class="toc-backref" href="#id5">Jelinek Mercer Smoothing:</a><a class="headerlink" href="#jelinek-mercer-smoothing" title="Permalink to this headline">¶</a></h3>
+<p>Combine relative frequency of query term with relative frequency in collection.
+Address small sample problem and explain unobserved words in document.
+JM Smoothing is better at explaining common and noisy words in query.
+JM smoothing outperforms other smoothing schemes in Query Modelling.</p>
+<p>This smoothing work better in case of noisy and long query as it DP smoothing is better in
+Query Modelling.</p>
+<p>Optimal Smoothing parameter</p>
+<p><strong>param_smoothing1</strong>  - Parameter range (0-1)</p>
+<p>Small Query - 0.1 {Conjunctive interpolation of Query Term}
+Longer Query - 0.7 {Disjunctive interpolation of Query Term}</p>
+</div>
+<div class="section" id="absolute-discounting-smoothing">
+<h3><a class="toc-backref" href="#id6">Absolute Discounting Smoothing:</a><a class="headerlink" href="#absolute-discounting-smoothing" title="Permalink to this headline">¶</a></h3>
+<p>Absolute Discounting Smoothing is larger for flatter distribution of words.
+More Smoothing for documents with relatively large count of unique terms.</p>
+<p>Optimal Smoothing parameter</p>
+<p><strong>param_smoothing1</strong>  - Parameter range (0-1){Small,Long query - 0.7}</p>
+</div>
+<div class="section" id="two-stage-smoothing-default">
+<h3><a class="toc-backref" href="#id7">Two Stage Smoothing(Default):</a><a class="headerlink" href="#two-stage-smoothing-default" title="Permalink to this headline">¶</a></h3>
+<p>Two Stage smoothing is combination of Dirichlet Prior Smoothing and Jelinek Mercer Smoothing.
+Two Stage smoothing is application of Jelinek-Mercer followed by Dirichlet Prior smoothing.
+Jelinek-Mercer will first model the query and followed by Dirichlet Prior will account for missing and unseen terms.</p>
+<p>Optimal Smoothing parameter</p>
+<p><strong>param_smoothing1</strong></p>
+<p>Parameter range (0-1)
+Small Query - 0.1 {Conjunctive interpolation of Query Term}
+Longer Query - 0.7 {Disjunctive interpolation of Query Term}</p>
+<p><strong>param_smoothing2</strong></p>
+<p>Small,Long Query - 2000</p>
+</div>
+</div>
+<div class="section" id="constructor-parameters">
+<h2><a class="toc-backref" href="#id8">Constructor Parameters</a><a class="headerlink" href="#constructor-parameters" title="Permalink to this headline">¶</a></h2>
+<p>User can select parameters to clamp negative value and select smoothing scheme using. Xapian manages a enum for selection of smoothing technique:Following values need to be assigned to select_smoothing parameter to select smoothing type:</p>
+<p><em>Jelinek Mercer Smoothing - JELINEK_MERCER_SMOOTHING</em></p>
+<p><em>Dirichlet Prior Smoothing - DIRICHLET_SMOOTHING</em></p>
+<p><em>Absolute Discounting Smoothing - ABSOLUTE_DISCOUNT_SMOOTHING</em></p>
+<p><em>Two Stage Smoothing - TWO_STAGE_SMOOTHING</em></p>
+<p>Following are Constructor provided by UnigramLM Weighting class. User can select constructor based on there requirement and number of parameter they want to provide. Refer generated documentation for constructor.</p>
+</div>
+<div class="section" id="selecting-weighting-scheme">
+<h2><a class="toc-backref" href="#id9">Selecting Weighting scheme:</a><a class="headerlink" href="#selecting-weighting-scheme" title="Permalink to this headline">¶</a></h2>
+<p>Add following line in your code to select Unigram Language Model Weighting scheme:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="n">enquire</span><span class="p">.</span><span class="n">set_weighting_scheme</span><span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">LMWeight</span><span class="p">(</span><span class="mf">700.0</span><span class="p">,</span><span class="n">Xapian</span><span class="o">::</span><span class="n">Weight</span><span class="o">::</span><span class="n">JELINEK_MERCER_SMOOTHING</span><span class="p">,</span><span class="mf">0.4</span><span class="p">,</span><span class="mi">2000</span><span class="p">,</span><span class="mf">0.9</span><span class="p">));</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tuning the Unigram Language Model: LMWeight</a><ul>
+<li><a class="reference internal" href="#clamping-negative-value">Clamping Negative value</a></li>
+<li><a class="reference internal" href="#smoothing">Smoothing</a><ul>
+<li><a class="reference internal" href="#dirichlet-prior-smoothing">Dirichlet Prior Smoothing:</a></li>
+<li><a class="reference internal" href="#jelinek-mercer-smoothing">Jelinek Mercer Smoothing:</a></li>
+<li><a class="reference internal" href="#absolute-discounting-smoothing">Absolute Discounting Smoothing:</a></li>
+<li><a class="reference internal" href="#two-stage-smoothing-default">Two Stage Smoothing(Default):</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#constructor-parameters">Constructor Parameters</a></li>
+<li><a class="reference internal" href="#selecting-weighting-scheme">Selecting Weighting scheme:</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="postingsource.html"
+                        title="previous chapter">Posting sources</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="custom_weighting.html"
+                        title="next chapter">Custom Weighting Schemes</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/advanced/unigramlm.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="custom_weighting.html" title="Custom Weighting Schemes"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="postingsource.html" title="Posting sources"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Advanced features</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2017 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

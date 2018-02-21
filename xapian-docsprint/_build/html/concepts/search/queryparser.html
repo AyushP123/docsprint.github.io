@@ -1,0 +1,318 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Query Parser &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../../index.html" />
+    <link rel="up" title="Search concepts" href="index.html" />
+    <link rel="next" title="Ranked matches" href="ranked_matches.html" />
+    <link rel="prev" title="Queries" href="queries.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ranked_matches.html" title="Ranked matches"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="queries.html" title="Queries"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Core concepts</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Search concepts</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="query-parser">
+<h1>Query Parser<a class="headerlink" href="#query-parser" title="Permalink to this headline">¶</a></h1>
+<p>To make searching databases simpler, Xapian provides a <cite>QueryParser</cite> class
+which converts a human readable query string into a Xapian Query object,
+for example:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="n">apple</span> <span class="n">AND</span> <span class="n">a</span> <span class="n">NEAR</span> <span class="n">word</span> <span class="n">OR</span> <span class="s">&quot;a phrase&quot;</span> <span class="n">NOT</span> <span class="p">(</span><span class="n">too</span> <span class="n">difficult</span><span class="p">)</span> <span class="o">+</span><span class="n">eh</span>
+</pre></div>
+</div>
+<p>The above example shows how some of the basic modifiers are interpreted by
+the QueryParser; the operators it supports follow the operators described
+earlier, for example:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">apple</span> <span class="pre">AND</span> <span class="pre">pear</span></code> matches documents where both terms are present</li>
+<li><code class="docutils literal"><span class="pre">apple</span> <span class="pre">OR</span> <span class="pre">pear</span></code> matches documents where either term (or both) are
+present</li>
+<li><code class="docutils literal"><span class="pre">apple</span> <span class="pre">NOT</span> <span class="pre">pear</span></code> matches documents where <code class="docutils literal"><span class="pre">apple</span></code> is present and
+<code class="docutils literal"><span class="pre">pear</span></code> is not</li>
+</ul>
+<div class="section" id="term-generation">
+<h2>Term Generation<a class="headerlink" href="#term-generation" title="Permalink to this headline">¶</a></h2>
+<p>The QueryParser uses an internal process to convert the query string into terms.
+This is similar to the process used by the <a class="reference internal" href="../indexing/termgenerator.html"><span class="doc">TermGenerator</span></a>, which can be used at index time to convert a
+string into terms.  It is often easiest to use QueryParser and
+<a class="reference internal" href="../indexing/termgenerator.html"><span class="doc">TermGenerator</span></a> on the same database.</p>
+</div>
+<div class="section" id="operators">
+<h2>Operators<a class="headerlink" href="#operators" title="Permalink to this headline">¶</a></h2>
+<p>As well as the basic logical operators, QueryParser supports the additional
+operators discussed earlier and introduces some new ones, for example:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="n">apple</span> <span class="n">NEAR</span> <span class="n">dessert</span>
+<span class="n">president</span> <span class="s">&quot;united states&quot;</span>
+<span class="s">&quot;race condition&quot;</span> <span class="o">-</span><span class="n">horse</span>
+<span class="o">+</span><span class="n">recipe</span> <span class="o">+</span><span class="n">apple</span> <span class="n">pie</span> <span class="n">cake</span> <span class="n">dessert</span>
+</pre></div>
+</div>
+<p>The NEAR and phrase support behaves in the same way as described earlier;
+the new features are the + and - operators, which select documents based on
+the presence or absence of specified terms, for example:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="s">&quot;race condition&quot;</span> <span class="o">-</span><span class="n">horse</span>
+</pre></div>
+</div>
+<p>Matches all documents with the phrase <code class="docutils literal"><span class="pre">&quot;race</span> <span class="pre">condition&quot;</span></code> but not <code class="docutils literal"><span class="pre">horse</span></code>; and:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="o">+</span><span class="n">recipe</span> <span class="o">+</span><span class="n">apple</span> <span class="n">pie</span> <span class="n">cake</span> <span class="n">desert</span>
+</pre></div>
+</div>
+<p>Which matches all documents which have the terms <code class="docutils literal"><span class="pre">recipe</span></code> and <code class="docutils literal"><span class="pre">apple</span></code>; then
+all documents with these terms are weighted according to the weight of the
+additional terms.</p>
+<p>One thing to note is that the behaviour of the +/- operators vary depending
+on the default operator used and the above examples assume that
+<code class="docutils literal"><span class="pre">OP_OR</span></code> is used.</p>
+</div>
+<div class="section" id="bracketed-expressions">
+<h2>Bracketed Expressions<a class="headerlink" href="#bracketed-expressions" title="Permalink to this headline">¶</a></h2>
+<p>When queries contain both OR and AND operators, AND takes precedence.
+To change the precedence of parts of the query, brackets can be used.
+For example, with the query:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="n">apple</span> <span class="n">OR</span> <span class="n">pear</span> <span class="n">AND</span> <span class="n">dessert</span>
+</pre></div>
+</div>
+<p>The query parser will interpret this query as:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="n">apple</span> <span class="n">OR</span> <span class="p">(</span><span class="n">pear</span> <span class="n">AND</span> <span class="n">dessert</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>So to change the precedence and make the dessert a requirement, you would
+write the query initially as:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">apple</span> <span class="n">OR</span> <span class="n">pear</span><span class="p">)</span> <span class="n">AND</span> <span class="n">dessert</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="stop-words">
+<h2>Stop words<a class="headerlink" href="#stop-words" title="Permalink to this headline">¶</a></h2>
+<p>Xapian also supports a <cite>stop word</cite> list, which allows you to specify words
+which should be removed from a query before processing. This list can
+be overridden within user search, so stop words can still be searched for
+if desired, for example if a stop word list contained &#8216;the&#8217; and a search
+was for:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="o">+</span><span class="n">the</span> <span class="o">+</span><span class="n">document</span>
+</pre></div>
+</div>
+<p>Then the search would find relevant documents which contained both &#8216;the&#8217;
+and &#8216;document&#8217;.  Also, when searching for phrases, stop words do not apply,
+for example here we will retrieve documents with the exact phrase including
+&#8216;the&#8217;:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="s">&quot;the green space&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="searching-with-prefixes">
+<h2>Searching with Prefixes<a class="headerlink" href="#searching-with-prefixes" title="Permalink to this headline">¶</a></h2>
+<p>When a database is populated using prefixed terms (for example, title,
+author) it is possible to tell the QueryParser that these fields can be
+searched for using a human-readable prefix; for example:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="nl">author</span><span class="p">:</span><span class="s">&quot;william shakespeare&quot;</span> <span class="nl">title</span><span class="p">:</span><span class="n">juliet</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="ranges">
+<h2>Ranges<a class="headerlink" href="#ranges" title="Permalink to this headline">¶</a></h2>
+<p>The QueryParser also supports range searches on document values, matching
+documents which have values within a given range. There are several types
+of range processors available, but the two discussed here are <a class="reference external" href="https://xapian.org/docs/apidoc/html/classXapian_1_1DateRangeProcessor.html">Date</a> and
+<a class="reference external" href="https://xapian.org/docs/apidoc/html/classXapian_1_1NumberRangeProcessor.html">Number</a>, which require that values are serialised as they are indexed.</p>
+<p>To use a range, additional programming is required to tell the QueryParser
+what format a range is specified in and which value is to be searched for
+matches within that range. This then gives rise to the ability to specify
+ranges as:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$10..50
+5..10kg
+01/01/1970..01/03/1970
+size:3..7
+</pre></div>
+</div>
+<p>When date ranges are configured (as a <a class="reference external" href="https://xapian.org/docs/apidoc/html/classXapian_1_1DateRangeProcessor.html">DateRangeProcessor</a>), you can
+configure which format dates are to be interpreted as (i.e. month-day-year)
+or otherwise.</p>
+</div>
+<div class="section" id="wildcards">
+<h2>Wildcards<a class="headerlink" href="#wildcards" title="Permalink to this headline">¶</a></h2>
+<p>It is also possible to use wildcards to match any number of trailing
+characters within a term; for example:</p>
+<blockquote>
+<div><code class="docutils literal"><span class="pre">wild*</span></code> matches <code class="docutils literal"><span class="pre">wild,</span> <span class="pre">wildcard,</span> <span class="pre">wildcat,</span> <span class="pre">wilderness</span></code></div></blockquote>
+<p>This feature is disabled by default; to enable it, see &#8216;Parser Flags&#8217;
+below.  It also requires a database to be set on the QueryParser (so
+that it can find the list of terms to expand the wildcard to).</p>
+<p>By default the wildcard will expand to as many terms as there are with
+the specified prefix.  This can cause performance problems, so you can limit
+the number of terms a wildcard will expand to by calling
+<code class="docutils literal"><span class="pre">Xapian::QueryParser::set_max_wildcard_expansion()</span></code>.  If this limit
+would be exceeded then an exception will be thrown.  The exception may
+be thrown by the QueryParser, or later when Enquire handles the query.</p>
+</div>
+<div class="section" id="searching-for-partially-entered-queries">
+<h2>Searching for Partially Entered Queries<a class="headerlink" href="#searching-for-partially-entered-queries" title="Permalink to this headline">¶</a></h2>
+<p>The QueryParser also supports performing a search with a query which has
+only been partially entered. This is intended for use with &#8220;incremental
+search&#8221; systems, which don&#8217;t wait for the user to finish typing their
+search before displaying an initial set of results. For example, in such
+a system a user would enter a search, and the system would display a new
+set of results after each letter, or whenever the user pauses for a
+short period of time (or some other similar strategy).</p>
+<p>The problem with this kind of search is that the last word in a
+partially entered query often has no semantic relation to the completed
+word. For example, a search for &#8220;dynamic cat&#8221; would return a quite
+different set of results to a search for &#8220;dynamic categorisation&#8221;. This
+results in the set of results displayed flicking rapidly as each new
+character is entered. A much smoother result can be obtained if the
+final word is treated as having an implicit terminating wildcard, so
+that it matches all words starting with the entered characters - thus,
+as each letter is entered, the set of results displayed narrows down to
+the desired subject.</p>
+<p>A similar effect could be obtained simply by enabling the wildcard
+matching option, and appending a &#8220;*&#8221; character to each query string.
+However, this would be confused by searches which ended with punctuation
+or other characters.</p>
+<p>This feature is disabled by default - pass
+<code class="docutils literal"><span class="pre">FLAG_PARTIAL</span></code> flag in the flags argument of
+<code class="docutils literal"><span class="pre">Xapian::QueryParser::parse_query(query_string,</span> <span class="pre">flags)</span></code> to enable it,
+and tell the QueryParser which database to expand wildcards from using
+the <code class="docutils literal"><span class="pre">Xapian::QueryParser::set_database(database)</span></code> method.</p>
+</div>
+<div class="section" id="default-operator">
+<h2>Default Operator<a class="headerlink" href="#default-operator" title="Permalink to this headline">¶</a></h2>
+<p>When the QueryParser receives a query, it joins together its component
+queries using a <a class="reference external" href="https://xapian.org/docs/apidoc/html/classXapian_1_1QueryParser.html#a2efe48be88c4872afec4bc963f417ea5">default operator</a> which defaults to
+<code class="docutils literal"><span class="pre">OP_OR</span></code> but can be modified at run time.</p>
+</div>
+<div class="section" id="parser-flags">
+<h2>Parser Flags<a class="headerlink" href="#parser-flags" title="Permalink to this headline">¶</a></h2>
+<p>The operation of the QueryParser can be altered through the use of flags,
+combined with the bitwise OR operator; these flags include:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">FLAG_BOOLEAN</span></code>: enables support for AND, OR, etc and bracketed
+expressions</li>
+<li><code class="docutils literal"><span class="pre">FLAG_PHRASE</span></code>: enables support for phrase expressions</li>
+<li><code class="docutils literal"><span class="pre">FLAG_LOVEHATE</span></code>: enables support for <cite>+</cite> and <cite>-</cite> operators</li>
+<li><code class="docutils literal"><span class="pre">FLAG_BOOLEAN_ANY_CASE</span></code>: enables support for lower/mixed case boolean
+operators</li>
+<li><code class="docutils literal"><span class="pre">FLAG_WILDCARD</span></code>: enables support for wildcards</li>
+</ul>
+<p>You can find more information about the available flags in the
+<a class="reference external" href="https://xapian.org/docs/apidoc/html/classXapian_1_1QueryParser.html#ae96a58a8de9d219ca3214a5a66e0407e">API documentation</a>.</p>
+<p>By default, the QueryParser enables <code class="docutils literal"><span class="pre">FLAG_BOOLEAN</span></code>,
+<code class="docutils literal"><span class="pre">FLAG_PHRASE</span></code> and <code class="docutils literal"><span class="pre">FLAG_LOVEHATE</span></code>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Query Parser</a><ul>
+<li><a class="reference internal" href="#term-generation">Term Generation</a></li>
+<li><a class="reference internal" href="#operators">Operators</a></li>
+<li><a class="reference internal" href="#bracketed-expressions">Bracketed Expressions</a></li>
+<li><a class="reference internal" href="#stop-words">Stop words</a></li>
+<li><a class="reference internal" href="#searching-with-prefixes">Searching with Prefixes</a></li>
+<li><a class="reference internal" href="#ranges">Ranges</a></li>
+<li><a class="reference internal" href="#wildcards">Wildcards</a></li>
+<li><a class="reference internal" href="#searching-for-partially-entered-queries">Searching for Partially Entered Queries</a></li>
+<li><a class="reference internal" href="#default-operator">Default Operator</a></li>
+<li><a class="reference internal" href="#parser-flags">Parser Flags</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="queries.html"
+                        title="previous chapter">Queries</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="ranked_matches.html"
+                        title="next chapter">Ranked matches</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/concepts/search/queryparser.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ranked_matches.html" title="Ranked matches"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="queries.html" title="Queries"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Core concepts</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Search concepts</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2017 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

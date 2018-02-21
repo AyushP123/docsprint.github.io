@@ -1,0 +1,6 @@
+*~
+.*.sw?
+*.pyc
+ENV
+db
+statesdb

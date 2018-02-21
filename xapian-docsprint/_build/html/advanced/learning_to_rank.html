@@ -1,0 +1,352 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Xapian Learning-to-Rank &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../index.html" />
+    <link rel="up" title="Advanced features" href="index.html" />
+    <link rel="next" title="Xapian Administrator’s Guide" href="admin_notes.html" />
+    <link rel="prev" title="Custom Weighting Schemes" href="custom_weighting.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="admin_notes.html" title="Xapian Administrator’s Guide"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="custom_weighting.html" title="Custom Weighting Schemes"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Advanced features</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="xapian-learning-to-rank">
+<h1><a class="toc-backref" href="#id1">Xapian Learning-to-Rank</a><a class="headerlink" href="#xapian-learning-to-rank" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="table-of-contents">
+<p class="topic-title first">Table of Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#xapian-learning-to-rank" id="id1">Xapian Learning-to-Rank</a><ul>
+<li><a class="reference internal" href="#introduction" id="id2">Introduction</a><ul>
+<li><a class="reference internal" href="#preparing-the-training-file" id="id3">Preparing the Training file</a></li>
+<li><a class="reference internal" href="#learning-the-model" id="id4">Learning the Model</a></li>
+<li><a class="reference internal" href="#ranking" id="id5">Ranking</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#features" id="id6">Features</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<h2><a class="toc-backref" href="#id2">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>Learning-to-Rank(LTR) can be viewed as a weighting scheme which involves machine learning. The main idea behind LTR is to bring up relevant documents given a low ranking by probablistic techniques like BM25 by using machine learning models. A model is trained by learning from the relevance judgements provided by a user corresponding to a set of queries and a corpus of documents. This model is then used to re-rank the matchset to bring more relevant documents higher in the ranking. Learning-to-Rank has gained immense popularity and attention among researchers recently.</p>
+<p>LTR can be broadly seen in two stages: Learning the model and Ranking. Learning the model takes the training file as input and produces a model. After that given this learnt model, when a new query comes in, scores can be assigned to the documents associated to it.</p>
+<div class="section" id="preparing-the-training-file">
+<h3><a class="toc-backref" href="#id3">Preparing the Training file</a><a class="headerlink" href="#preparing-the-training-file" title="Permalink to this headline">¶</a></h3>
+<p>Currently the ranking models supported by LTR are supervised learning models. A supervised learning model requires a labelled training data as an input. To learn a model using LTR you need to provide the training data in the following format.</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>0 qid:10032 1:0.130742 2:0.000000 3:0.333333 4:0.000000 ... 18:0.750000 19:1.000000 #docid = 1123323
+1 qid:10032 1:0.593640 2:1.000000 3:0.000000 4:0.000000 ... 18:0.500000 19:0.023400 #docid = 4222333
+</pre></div>
+</div>
+<p>Here each row represents the document for the specified query. The first column is the relevance label and which can take non-negative values. The second column represents the queryid, and the last column is the docid. The third column represents the value of the features.</p>
+<p>As mentioned before, this process requires a training file in the above format. xapian-letor API empowers you to generate such training file. But for that you have to supply some information like:</p>
+<ol class="arabic">
+<li><p class="first">Query file: This file has information of queries to be involved in
+learning and its id. It should be formatted in such a way:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span>2010001 &#39;landslide,malaysia&#39;
+2010002 &#39;search,engine&#39;
+2010003 &#39;Monuments,of,India&#39;
+2010004 &#39;Indian,food&#39;
+</pre></div>
+</div>
+<p>where 2010xxx being query-id followed by a comma separated query in
+single-quotes.</p>
+</li>
+<li><p class="first">Qrel file: This is the file containing relevance judgements. It should
+be formatted in this way:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="mi">2010003</span> <span class="n">Q0</span> <span class="mi">19243417</span> <span class="mi">1</span>
+<span class="mi">2010003</span> <span class="n">Q0</span> <span class="mi">3256433</span> <span class="mi">1</span>
+<span class="mi">2010003</span> <span class="n">Q0</span> <span class="mi">275014</span> <span class="mi">1</span>
+<span class="mi">2010003</span> <span class="n">Q0</span> <span class="mi">298021</span> <span class="mi">0</span>
+<span class="mi">2010003</span> <span class="n">Q0</span> <span class="mi">1456811</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>where first column is query-id, third column is Document-id and fourth column being relevance label which is 0 for irrelevance and 1 for relevance. Second column is many times referred as &#8216;iter&#8217; but doesn&#8217;t really important for us.  All the fields are whitespace delimited. This is the standard format of almost all the relevance judgement files. If you have relevance judgements in a different format then you can convert it to this format using a text processing tool such as &#8216;awk&#8217;.</p>
+</li>
+<li><p class="first">Collection Index : Here you supply the path to the index of the corpus. If
+you have &#8216;title&#8217; information in the collection with some xml/html tag or so
+then add:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="n">indexer</span><span class="p">.</span><span class="n">index</span><span class="p">(</span><span class="n">title</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="s">&quot;S&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>You can refer to the &#8220;Indexing&#8221; section under &#8220;A practical example&#8221; heading for the Collection Index. The database created in the practical example will be used as the collection index for the examples. In particular we are going to be using all the documents which contain the term &#8220;watch&#8221;, which will be used as the query for the examples.</p>
+<p>Provided such information, API is capable of creating the training file which is in the mentioned format and can be used for learning a model.</p>
+<p>To prepare a training file run the following command from the top level directory. This example assumes that you have created the db from the first example in &#8220;Indexing&#8221; section under &#8220;A practical example&#8221; header and you have installed xapian-letor.</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ xapian-prepare-trainingfile --db=db data/query.txt data/qrel.txt training_data.txt
+</pre></div>
+</div>
+<p>xapian-prepare-trainingfile is a utility present after you have installed xapian-letor. This should create a training_data.txt which should have the similar values to the data/training_data.txt.</p>
+<p>The source code is present for xapian-prepare-trainingfile.cc is present at <a class="reference external" href="https://github.com/xapian/xapian/blob/master/xapian-letor/bin/xapian-prepare-trainingfile.cc">xapian/xapian-letor/bin/xapian-prepare-trainingfile.cc</a>.</p>
+</div>
+<div class="section" id="learning-the-model">
+<h3><a class="toc-backref" href="#id4">Learning the Model</a><a class="headerlink" href="#learning-the-model" title="Permalink to this headline">¶</a></h3>
+<p>In xapian-letor we support the following learning algorithms:</p>
+<ol class="arabic simple">
+<li><a class="reference external" href="http://dl.acm.org/citation.cfm?id=1273513">ListNET</a></li>
+<li><a class="reference external" href="http://dl.acm.org/citation.cfm?id=775067">Ranking-SVM</a></li>
+<li><a class="reference external" href="http://icml2008.cs.helsinki.fi/papers/167.pdf">ListMLE</a></li>
+</ol>
+<p>You can use any one of the rankers to Learn the model. The command line tool xapian-train uses ListNET as the ranker for learning. To learn a model run the following command from the top level directory.</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ xapian-train --db=db data/training_data.txt &quot;ListNET_Ranker&quot;
+</pre></div>
+</div>
+</div>
+<div class="section" id="ranking">
+<h3><a class="toc-backref" href="#id5">Ranking</a><a class="headerlink" href="#ranking" title="Permalink to this headline">¶</a></h3>
+<p>After we have built a model, it&#8217;s quite straightforward to get a real score for a particular document for the given query. Here we supply the first hand retrieved ranked-list to the Ranking function, which assigns a new score to each document after converting it to the same dimensioned feature vector. This list is re-ranked according to the new scores.</p>
+<p>Here’s the significant part of the example code to implement ranking.</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">rank_letor</span><span class="p">(</span><span class="n">string</span> <span class="n">db_path</span><span class="p">,</span> <span class="n">string</span> <span class="n">model_key</span><span class="p">,</span> <span class="n">string</span> <span class="n">query_</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">Stem</span> <span class="n">stemmer</span><span class="p">(</span><span class="s">&quot;english&quot;</span><span class="p">);</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">doccount</span> <span class="n">msize</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">QueryParser</span> <span class="n">parser</span><span class="p">;</span>
+    <span class="n">parser</span><span class="p">.</span><span class="n">add_prefix</span><span class="p">(</span><span class="s">&quot;title&quot;</span><span class="p">,</span> <span class="s">&quot;S&quot;</span><span class="p">);</span>
+    <span class="n">parser</span><span class="p">.</span><span class="n">add_prefix</span><span class="p">(</span><span class="s">&quot;subject&quot;</span><span class="p">,</span> <span class="s">&quot;S&quot;</span><span class="p">);</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">Database</span> <span class="n">db</span><span class="p">(</span><span class="n">db_path</span><span class="p">);</span>
+    <span class="n">parser</span><span class="p">.</span><span class="n">set_database</span><span class="p">(</span><span class="n">db</span><span class="p">);</span>
+    <span class="n">parser</span><span class="p">.</span><span class="n">set_default_op</span><span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">Query</span><span class="o">::</span><span class="n">OP_OR</span><span class="p">);</span>
+    <span class="n">parser</span><span class="p">.</span><span class="n">set_stemmer</span><span class="p">(</span><span class="n">stemmer</span><span class="p">);</span>
+    <span class="n">parser</span><span class="p">.</span><span class="n">set_stemming_strategy</span><span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">QueryParser</span><span class="o">::</span><span class="n">STEM_SOME</span><span class="p">);</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">Query</span> <span class="n">query_no_prefix</span> <span class="o">=</span> <span class="n">parser</span><span class="p">.</span><span class="n">parse_query</span><span class="p">(</span><span class="n">query_</span><span class="p">,</span>
+						       <span class="n">parser</span><span class="p">.</span><span class="n">FLAG_DEFAULT</span><span class="p">);</span>
+    <span class="c1">// query with title as default prefix</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">Query</span> <span class="n">query_default_prefix</span> <span class="o">=</span> <span class="n">parser</span><span class="p">.</span><span class="n">parse_query</span><span class="p">(</span><span class="n">query_</span><span class="p">,</span>
+							    <span class="n">parser</span><span class="p">.</span><span class="n">FLAG_DEFAULT</span><span class="p">,</span>
+							    <span class="s">&quot;S&quot;</span><span class="p">);</span>
+    <span class="c1">// Combine queries</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">Query</span> <span class="n">query</span> <span class="o">=</span> <span class="n">Xapian</span><span class="o">::</span><span class="n">Query</span><span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">Query</span><span class="o">::</span><span class="n">OP_OR</span><span class="p">,</span> <span class="n">query_no_prefix</span><span class="p">,</span>
+					<span class="n">query_default_prefix</span><span class="p">);</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">Enquire</span> <span class="n">enquire</span><span class="p">(</span><span class="n">db</span><span class="p">);</span>
+    <span class="n">enquire</span><span class="p">.</span><span class="n">set_query</span><span class="p">(</span><span class="n">query</span><span class="p">);</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">MSet</span> <span class="n">mset</span> <span class="o">=</span> <span class="n">enquire</span><span class="p">.</span><span class="n">get_mset</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">msize</span><span class="p">);</span>
+
+    <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Docids before re-ranking by LTR model:&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">MSetIterator</span> <span class="n">i</span> <span class="o">=</span> <span class="n">mset</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">mset</span><span class="p">.</span><span class="n">end</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">Xapian</span><span class="o">::</span><span class="n">Document</span> <span class="n">doc</span> <span class="o">=</span> <span class="n">i</span><span class="p">.</span><span class="n">get_document</span><span class="p">();</span>
+	<span class="n">string</span> <span class="n">data</span> <span class="o">=</span> <span class="n">doc</span><span class="p">.</span><span class="n">get_data</span><span class="p">();</span>
+	<span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="o">*</span><span class="n">i</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;: [&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">i</span><span class="p">.</span><span class="n">get_weight</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;]</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">data</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="c1">// Initialise Ranker object with ListNETRanker instance, db path and query.</span>
+    <span class="c1">// See Ranker documentation for available Ranker subclass options.</span>
+    <span class="n">Xapian</span><span class="o">::</span><span class="n">ListNETRanker</span> <span class="n">ranker</span><span class="p">;</span>
+    <span class="n">ranker</span><span class="p">.</span><span class="n">set_database_path</span><span class="p">(</span><span class="n">db_path</span><span class="p">);</span>
+    <span class="n">ranker</span><span class="p">.</span><span class="n">set_query</span><span class="p">(</span><span class="n">query</span><span class="p">);</span>
+
+    <span class="c1">// Re-rank the existing mset using the letor model.</span>
+    <span class="n">ranker</span><span class="p">.</span><span class="n">rank</span><span class="p">(</span><span class="n">mset</span><span class="p">,</span> <span class="n">model_key</span><span class="p">);</span>
+
+    <span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Docids after re-ranking by LTR model:</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">endl</span><span class="p">;</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">Xapian</span><span class="o">::</span><span class="n">MSetIterator</span> <span class="n">i</span> <span class="o">=</span> <span class="n">mset</span><span class="p">.</span><span class="n">begin</span><span class="p">();</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">mset</span><span class="p">.</span><span class="n">end</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+	<span class="n">Xapian</span><span class="o">::</span><span class="n">Document</span> <span class="n">doc</span> <span class="o">=</span> <span class="n">i</span><span class="p">.</span><span class="n">get_document</span><span class="p">();</span>
+	<span class="n">string</span> <span class="n">data</span> <span class="o">=</span> <span class="n">doc</span><span class="p">.</span><span class="n">get_data</span><span class="p">();</span>
+	<span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="o">*</span><span class="n">i</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;: [&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">i</span><span class="p">.</span><span class="n">get_weight</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;]</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">data</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>A full copy of this code is available in <a class="reference external" href="https://github.com/xapian/xapian-docsprint/blob/master/code/c++/search_letor.cc">code/c++/search_letor.cc</a></p>
+<p>You can run this code as follows to re-rank the list of documents retrieved from the db containing the term &#8220;watch&#8221; in the order of relevance as mentioned in the data/qrel.</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ g++ `xapian-config --cxxflags` code/c++/search_letor.cc -lxapianletor -o search_letor `xapian-config --libs`
+$ ./search_letor db ListNET_Ranker watch
+Docids before re-ranking by LTR model:
+4: [6.7291]
+1970-377
+Watch with Chinese duplex escapement
+Watch with Chinese duplex escapement
+13: [6.29324]
+1985-1538
+Watch timer by P
+Watch timer by P.L. Instruments Ltd., Welwyn Garden City; with tuning fork standard and spark printer
+33: [5.77657]
+1986-516
+A device by Favag of Neuchatel which enables a stop watch to
+A device by Favag of Neuchatel which enables a stop watch to be operated by an electric signal, 1961
+18: [5.76966]
+1987-1145
+Solar/Sidereal verge watch with epicyclic maintaining power
+Solar/Sidereal verge watch with epicyclic maintaining power by James Green, London, no. 5969, in silver pair case hallmarked 1776, believed to be the earliest English watch to indicate solar and sidereal time with seconds.
+36: [5.52705]
+1986-91
+Universal &#39;Tri-Compax&#39; chronographic wrist watch
+&#39;Tri-Compax&#39; calendar chronograph wristwatch in gold case, by Universal, Geneva, Switzerland, 1960-1986.
+15: [5.05174]
+1985-1914
+Ingersoll &quot;Dan Dare&quot; automaton pocket watch with pin-pallet
+Ingersoll &quot;Dan Dare&quot; automaton pocket watch with pin-pallet lever escapement. The dial shows a helmeted Dan Dare holding a ray gun, with a monster approaching. The emblem of the &quot; Eagle&quot; children&#39;s comic is impressed in the back of case.
+46: [2.5204]
+1883-68
+Model by Dent of mechanism for setting hands and winding up
+Model by Dent of mechanism for setting hands and winding up a keyless watch
+Docids after re-ranking by LTR model:
+
+46: [-0.0075442]
+1883-68
+Model by Dent of mechanism for setting hands and winding up
+Model by Dent of mechanism for setting hands and winding up a keyless watch
+15: [-0.0298056]
+1985-1914
+Ingersoll &quot;Dan Dare&quot; automaton pocket watch with pin-pallet
+Ingersoll &quot;Dan Dare&quot; automaton pocket watch with pin-pallet lever escapement. The dial shows a helmeted Dan Dare holding a ray gun, with a monster approaching. The emblem of the &quot; Eagle&quot; children&#39;s comic is impressed in the back of case.
+33: [-0.0305018]
+1986-516
+A device by Favag of Neuchatel which enables a stop watch to
+A device by Favag of Neuchatel which enables a stop watch to be operated by an electric signal, 1961
+36: [-0.032863]
+1986-91
+Universal &#39;Tri-Compax&#39; chronographic wrist watch
+&#39;Tri-Compax&#39; calendar chronograph wristwatch in gold case, by Universal, Geneva, Switzerland, 1960-1986.
+18: [-0.0338239]
+1987-1145
+Solar/Sidereal verge watch with epicyclic maintaining power
+Solar/Sidereal verge watch with epicyclic maintaining power by James Green, London, no. 5969, in silver pair case hallmarked 1776, believed to be the earliest English watch to indicate solar and sidereal time with seconds.
+13: [-0.0403684]
+1985-1538
+Watch timer by P
+Watch timer by P.L. Instruments Ltd., Welwyn Garden City; with tuning fork standard and spark printer
+4: [-0.0447454]
+1970-377
+Watch with Chinese duplex escapement
+Watch with Chinese duplex escapement
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="features">
+<h2><a class="toc-backref" href="#id6">Features</a><a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
+<p>Features play a major role in the learning. In LTR, features are mainly of three types: query dependent, document dependent (pagerank, inLink/outLink number, number of children, etc) and query-document pair dependent (TF-IDF Score, BM25 Score, etc).</p>
+<p>Currently we have incorporated 19 features which are described below. These features are statistically tested in <a class="reference external" href="http://dl.acm.org/citation.cfm?id=1009006">Nallapati2004</a>.</p>
+<blockquote>
+<div><p>Here c(w,D) means that count of term w in Document D. C represents the Collection. &#8216;n&#8217; is the total number of terms in query.
+<span class="math">\(|.|\)</span> is size-of function and idf(.) is the inverse-document-frequency.</p>
+<ol class="arabic simple">
+<li><span class="math">\(\sum_{q_i \in Q \cap D} \log{\left( c(q_i,D) \right)}\)</span></li>
+<li><span class="math">\(\sum_{i=1}^{n}\log{\left(1+\frac{c\left(q_i,D\right)}{|D|}\right)}\)</span></li>
+<li><span class="math">\(\sum_{q_i \in Q \cap D} \log{\left(idf(q_i) \right) }\)</span></li>
+<li><span class="math">\(\sum_{q_i \in Q \cap D} \log{\left( \frac{|C|}{c(q_i,C)} \right)}\)</span></li>
+<li><span class="math">\(\sum_{i=1}^{n}\log{\left(1+\frac{c\left(q_i,D\right)}{|D|}idf(q_i)\right)}\)</span></li>
+<li><span class="math">\(\sum_{i=1}^{n}\log{\left(1+\frac{c\left(q_i,D\right)}{|D|}\frac{|C|}{c(q_i,C)}\right)}\)</span></li>
+</ol>
+</div></blockquote>
+<p>All the above 6 features are calculated considering &#8216;title only&#8217;, &#8216;body only&#8217; and &#8216;whole&#8217; document. So they make in total 6*3=18 features. The 19th feature is the Xapian weighting scheme score assigned to the document (by default this is BM25).The API gives a choice to select which specific features you want to use. By default, all the 19 features defined above are used.</p>
+<p>One thing that should be noticed is that all the feature values are <a class="reference external" href="https://trac.xapian.org/wiki/GSoC2011/LTR/Notes#QueryLevelNorm">normalized at Query-Level</a>. That means that the values of a particular feature for a particular query are divided by its query-level maximum value and hence all the feature values will be between 0 and 1. This normalization helps for unbiased learning.</p>
+<p>Nallapati, R. Discriminative models for information retrieval. Proceedings of SIGIR 2004 (pp. 64-71).</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Xapian Learning-to-Rank</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a><ul>
+<li><a class="reference internal" href="#preparing-the-training-file">Preparing the Training file</a></li>
+<li><a class="reference internal" href="#learning-the-model">Learning the Model</a></li>
+<li><a class="reference internal" href="#ranking">Ranking</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#features">Features</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="custom_weighting.html"
+                        title="previous chapter">Custom Weighting Schemes</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="admin_notes.html"
+                        title="next chapter">Xapian Administrator&#8217;s Guide</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/advanced/learning_to_rank.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="admin_notes.html" title="Xapian Administrator’s Guide"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="custom_weighting.html" title="Custom Weighting Schemes"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Advanced features</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2017 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

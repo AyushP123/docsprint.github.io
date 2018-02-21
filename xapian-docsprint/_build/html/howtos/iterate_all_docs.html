@@ -1,0 +1,149 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Iterate through all documents &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../index.html" />
+    <link rel="up" title="How To..." href="index.html" />
+    <link rel="next" title="Advanced features" href="../advanced/index.html" />
+    <link rel="prev" title="How to change how documents are scored" href="weighting_scheme.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../advanced/index.html" title="Advanced features"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="weighting_scheme.html" title="How to change how documents are scored"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">How To...</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="iterate-through-all-documents">
+<h1>Iterate through all documents<a class="headerlink" href="#iterate-through-all-documents" title="Permalink to this headline">¶</a></h1>
+<p>Sometimes you want to access all the documents in a Xapian database.  This can actually be done in two ways:</p>
+<div class="section" id="matchall-queries">
+<span id="match-all"></span><h2>MatchAll Queries<a class="headerlink" href="#matchall-queries" title="Permalink to this headline">¶</a></h2>
+<p>The <cite>Xapian::Query::MatchAll</cite> query is a special static query which will match all documents in the database.
+If you run this query on its own, with appropriate start and end parameters, you could retrieve all the documents.
+However be aware that even if you paged through the result sets, when you try to access a page deep in the result
+set a lot of processing and memory will be used even if the page is small, so running a plain <cite>MatchAll</cite> query is
+rarely a good idea.</p>
+<p>However, this method <em>is</em> appropriate if you&#8217;re constructing a complicated query, and one of the components of that
+query should be all the documents.  In particular, since Xapian doesn&#8217;t support a unary <cite>NOT</cite> operator, if you want to
+run a &#8220;pure NOT&#8221; query to retrieve all documents which do not contain a given term, this can be only be done using a
+<cite>MatchAll</cite> query and the binary <cite>NOT</cite> operator.</p>
+</div>
+<div class="section" id="iterating-through-all-documents">
+<h2>Iterating through all documents<a class="headerlink" href="#iterating-through-all-documents" title="Permalink to this headline">¶</a></h2>
+<p>If you do need access to all the documents in the database, it is better to use a &#8220;posting list iterator&#8221;.
+Such an iterator, which returns all documents in the database, can be created using:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="n">Xapian</span><span class="o">::</span><span class="n">Database</span><span class="o">::</span><span class="n">postlist_begin</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In Xapian, a postlist is a list of the documents in which a term exists.  Here, we&#8217;re again using the special
+&#8220;empty&#8221; term, which implicitly matches all documents, to get an iterator over all documents.</p>
+<p>The iterator can be dereferenced to get the document IDs; to get the actual documents, the
+<code class="docutils literal"><span class="pre">Xapian::Database::get_document()</span></code> method should be used.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Iterate through all documents</a><ul>
+<li><a class="reference internal" href="#matchall-queries">MatchAll Queries</a></li>
+<li><a class="reference internal" href="#iterating-through-all-documents">Iterating through all documents</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="weighting_scheme.html"
+                        title="previous chapter">How to change how documents are scored</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../advanced/index.html"
+                        title="next chapter">Advanced features</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/howtos/iterate_all_docs.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../advanced/index.html" title="Advanced features"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="weighting_scheme.html" title="How to change how documents are scored"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >How To...</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2017 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

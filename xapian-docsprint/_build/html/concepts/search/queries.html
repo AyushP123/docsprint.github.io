@@ -1,0 +1,242 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Queries &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../../index.html" />
+    <link rel="up" title="Search concepts" href="index.html" />
+    <link rel="next" title="Query Parser" href="queryparser.html" />
+    <link rel="prev" title="Search concepts" href="index.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="queryparser.html" title="Query Parser"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Search concepts"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Core concepts</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Search concepts</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="queries">
+<h1>Queries<a class="headerlink" href="#queries" title="Permalink to this headline">¶</a></h1>
+<p>Queries within Xapian are the mechanism by which documents are searched for
+within a database. They can be a simple search for text-based terms or
+a search based on the values assigned to documents, which can be combined
+using a number of different methods to produce more complex queries.</p>
+<div class="section" id="simple-queries">
+<h2>Simple Queries<a class="headerlink" href="#simple-queries" title="Permalink to this headline">¶</a></h2>
+<p>The most basic query is a search for a single textual term. This will find
+all documents in the database which have that term assigned to them. For
+example, a search might be for the term &#8220;wood&#8221;.</p>
+<p>Queries can also be used to match values assigned to documents by applying
+a <em>value operator</em> to a particular value slot.</p>
+<p>When a query is executed, the result is a list of documents that match the
+query, together with a weight for each which indicates how good a match for
+the query that particular document is.</p>
+</div>
+<div class="section" id="logical-operators">
+<h2>Logical Operators<a class="headerlink" href="#logical-operators" title="Permalink to this headline">¶</a></h2>
+<p>Each query produces a list of documents with a weight according to how good
+a match each document is for that query. These queries can then be combined
+to produce a more complex tree-like query structure, with the operators
+acting as branches within the tree.</p>
+<p>The most basic operators are the logical operators: OR, AND and AND_NOT
+- these match documents in the following way:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">OP_OR</span></code> - matches documents which match query A
+<em>or</em> B (or both)</li>
+<li><code class="docutils literal"><span class="pre">OP_AND</span></code> - matches documents which match both
+query A <em>and</em> B</li>
+<li><code class="docutils literal"><span class="pre">OP_AND_NOT</span></code> - matches documents which match
+query A but <em>not</em> B</li>
+</ul>
+<p>Each operator produces a weight for each document it matches, which
+depends on the weight of one or both subqueries in the following way:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">OP_OR</span></code> - matches documents with the sum of
+weights from A and B</li>
+<li><code class="docutils literal"><span class="pre">OP_AND</span></code> - matches documents with the sum of
+weights from A and B</li>
+<li><code class="docutils literal"><span class="pre">OP_AND_NOT</span></code> - matches documents with the weight
+from A only</li>
+</ul>
+</div>
+<div class="section" id="maybe">
+<h2>Maybe<a class="headerlink" href="#maybe" title="Permalink to this headline">¶</a></h2>
+<p>In addition to the basic logical operators, there is an additional logical
+operator <code class="docutils literal"><span class="pre">OP_AND_MAYBE</span></code> which matches any document
+which matches A (whether or not B matches).  If only B matches, then
+<code class="docutils literal"><span class="pre">OP_AND_MAYBE</span></code> doesn&#8217;t match.  For this operator, the
+weight is the sum of the matching subqueries, so:</p>
+<ol class="arabic simple">
+<li>Documents which match A and B match with the weight of A+B</li>
+<li>Documents which match A only match with weight of A</li>
+</ol>
+<p>This allows you to state that you require some terms (A) and that other
+terms (B) are useful but not required.</p>
+</div>
+<div class="section" id="filtering">
+<h2>Filtering<a class="headerlink" href="#filtering" title="Permalink to this headline">¶</a></h2>
+<p>A query can be filtered by another query.  There are two ways to apply
+a filter to a query depending whether you want to include or exclude
+documents:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">OP_FILTER</span></code> - matches documents which match both
+subqueries, but the weight is only taken from the left subquery (in
+other respects it acts like <code class="docutils literal"><span class="pre">OP_AND</span></code>)</li>
+<li><code class="docutils literal"><span class="pre">OP_AND_NOT</span></code> - matches documents which match the
+left subquery but don&#8217;t match the right hand one (with weights coming
+from the left subquery)</li>
+</ul>
+</div>
+<div class="section" id="value-ranges">
+<h2>Value ranges<a class="headerlink" href="#value-ranges" title="Permalink to this headline">¶</a></h2>
+<p>When using document values, there are three relevant operators:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">OP_VALUE_LE</span></code> - matches documents where the given
+value is less than or equal a fixed value</li>
+<li><code class="docutils literal"><span class="pre">OP_VALUE_GE</span></code> - matches documents where the given
+value is greater than or equal to a fixed value</li>
+<li><code class="docutils literal"><span class="pre">OP_VALUE_RANGE</span></code> - matches documents where the
+given value is within the given fixed range (including both
+endpoints)</li>
+</ul>
+<p>Note that when using these operators, they decide whether to include or
+exclude documents only and do not affect the weight of a document.</p>
+</div>
+<div class="section" id="near-and-phrase">
+<h2>Near and Phrase<a class="headerlink" href="#near-and-phrase" title="Permalink to this headline">¶</a></h2>
+<p>Two additional operators that are commonly used are <em>NEAR</em>, which finds
+terms within 10 words of each other in the current document, behaving like
+<code class="docutils literal"><span class="pre">OP_AND</span></code> with regard to weights, so that:</p>
+<ul class="simple">
+<li>Documents which match A within 10 words of B are matched, with weight
+of A+B</li>
+</ul>
+<p>The phrase operator allows for searching for a specific phrase and returns
+only matches where all terms appear in the document, in the correct order,
+giving a weight of the sum of each term. For example:</p>
+<ul class="simple">
+<li>Documents which match A followed by B followed by C gives a weight of
+A+B+C</li>
+</ul>
+</div>
+<div class="section" id="additional-operators">
+<h2>Additional operators<a class="headerlink" href="#additional-operators" title="Permalink to this headline">¶</a></h2>
+<p>Xapian also provides additional operators which can be used to provide more
+flexibility than the operators above. For more details of these, see the
+<a class="reference external" href="https://xapian.org/docs/apidoc/html/classXapian_1_1Query.html#a7e7b6b8ad0c915c2364578dfaaf6100b">Xapian API documentation</a>.</p>
+<p>There are also a pair of predefined query objects which can provide handy:
+<a class="reference internal" href="../../howtos/iterate_all_docs.html#match-all"><span class="std std-ref">MatchAll</span></a> matches all the documents in the database, and
+MatchNothing matches none of them.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Queries</a><ul>
+<li><a class="reference internal" href="#simple-queries">Simple Queries</a></li>
+<li><a class="reference internal" href="#logical-operators">Logical Operators</a></li>
+<li><a class="reference internal" href="#maybe">Maybe</a></li>
+<li><a class="reference internal" href="#filtering">Filtering</a></li>
+<li><a class="reference internal" href="#value-ranges">Value ranges</a></li>
+<li><a class="reference internal" href="#near-and-phrase">Near and Phrase</a></li>
+<li><a class="reference internal" href="#additional-operators">Additional operators</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Search concepts</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="queryparser.html"
+                        title="next chapter">Query Parser</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/concepts/search/queries.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="queryparser.html" title="Query Parser"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Search concepts"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Core concepts</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Search concepts</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2017 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

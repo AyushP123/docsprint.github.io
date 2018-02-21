@@ -1,0 +1,148 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Searching separate fields &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../../index.html" />
+    <link rel="up" title="Searching" href="index.html" />
+    <link rel="next" title="Database Modified" href="database_modified.html" />
+    <link rel="prev" title="Running a Search" href="running_the_search.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="database_modified.html" title="Database Modified"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="running_the_search.html" title="Running a Search"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >A practical example</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">Searching</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="searching-separate-fields">
+<h1>Searching separate fields<a class="headerlink" href="#searching-separate-fields" title="Permalink to this headline">¶</a></h1>
+<p>When we built our index, we used prefixes to separate the terms generated from
+the title and description fields.  This allows us to perform searches which are
+restricted to the text in just one of those fields, by searching only terms
+with the desired prefix.</p>
+<p>When using the Query Parser, it is possible to restrict your search to
+certain prefixed terms (e.g. title, or description). These can be searched
+for either by using a search prefix (which can correlate to an indexing
+prefix) or as a general text document.</p>
+<p>To set up a search prefix, the QueryParser needs to be told which prefixes
+in the search query relate to those in the index. We did that in the previous
+search code:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span>    <span class="n">queryparser</span><span class="p">.</span><span class="n">add_prefix</span><span class="p">(</span><span class="s">&quot;title&quot;</span><span class="p">,</span> <span class="s">&quot;S&quot;</span><span class="p">);</span>
+    <span class="n">queryparser</span><span class="p">.</span><span class="n">add_prefix</span><span class="p">(</span><span class="s">&quot;description&quot;</span><span class="p">,</span> <span class="s">&quot;XD&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>This allows us to perform a search based on either field, for example:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ g++ `xapian-config --cxxflags` code/c++/search1.cc code/c++/support.cc -o search1 `xapian-config --libs`
+$ ./search1 db title:sunwatch
+1: #001 Ansonia Sunwatch (pocket compas dial)
+&#39;title:sunwatch&#39;[0:10] = 1
+</pre></div>
+</div>
+<p>We can also combine prefixes with the logical operators to perform more
+complex queries (note that we need to escape quotes or else the shell
+will eat them):</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ g++ `xapian-config --cxxflags` code/c++/search1.cc code/c++/support.cc -o search1 `xapian-config --libs`
+$ ./search1 db description:\&quot;leather case\&quot; AND title:sundial
+1: #055 Silver altitude sundial in leather case
+&#39;description:&quot;leather case&quot; AND title:sundial&#39;[0:10] = 55
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="running_the_search.html"
+                        title="previous chapter">Running a Search</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="database_modified.html"
+                        title="next chapter">Database Modified</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/practical_example/searching/prefix.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="database_modified.html" title="Database Modified"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="running_the_search.html" title="Running a Search"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >A practical example</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >Searching</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2017 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>

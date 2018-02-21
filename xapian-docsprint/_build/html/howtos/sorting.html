@@ -1,0 +1,314 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Sorting &#8212; Getting Started with Xapian v1.4.1</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.4.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Getting Started with Xapian v1.4.1" href="../index.html" />
+    <link rel="up" title="How To..." href="index.html" />
+    <link rel="next" title="Collapsing of Search Results" href="collapsing.html" />
+    <link rel="prev" title="Facets" href="facets.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="collapsing.html" title="Collapsing of Search Results"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="facets.html" title="Facets"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">How To...</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="sorting">
+<h1>Sorting<a class="headerlink" href="#sorting" title="Permalink to this headline">¶</a></h1>
+<p>By default, Xapian orders search results by decreasing relevance score.
+However, it also allows results to be ordered by other criteria, or
+a combination of other criteria and relevance score.</p>
+<p>If two or more results compare equal by the sorting criteria, then their
+order is decided by their document ids.  By default, the document ids sort
+in ascending order (so a lower document id is &#8220;better&#8221;), but descending
+order can be chosen using <code class="docutils literal"><span class="pre">enquire.set_docid_order(enquire.DESCENDING);</span></code>.
+If you have no preference, you can tell Xapian to use whatever order is
+most efficient using <code class="docutils literal"><span class="pre">enquire.set_docid_order(enquire.DONT_CARE);</span></code>.</p>
+<p>It is also possible to change the way that the relevance scores are calculated
+- for details, see the <a class="reference internal" href="weighting_scheme.html"><span class="doc">document on weighting schemes and scoring</span></a> for details.</p>
+<div class="section" id="sorting-by-value">
+<h2>Sorting by Value<a class="headerlink" href="#sorting-by-value" title="Permalink to this headline">¶</a></h2>
+<p>You can order documents by comparing a specified document value.  Note that the
+comparison used compares the byte values in the value (i.e. it&#8217;s a string sort
+ignoring locale), so <code class="docutils literal"><span class="pre">1</span></code> &lt; <code class="docutils literal"><span class="pre">10</span></code> &lt; <code class="docutils literal"><span class="pre">2</span></code>.  If you want to encode the value
+such that it sorts numerically, use <code class="docutils literal"><span class="pre">sortable_serialise()</span></code> to encode
+values at index time - this works equally well on integers and floating point
+values:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="n">Xapian</span><span class="o">::</span><span class="n">Document</span> <span class="n">doc</span><span class="p">;</span>
+<span class="n">doc</span><span class="p">.</span><span class="n">add_value</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">Xapian</span><span class="o">::</span><span class="n">sortable_serialise</span><span class="p">(</span><span class="n">price</span><span class="p">));</span>
+</pre></div>
+</div>
+<p>There are three methods which are used to specify how the value is used to
+sort, depending if/how you want relevance used in the ordering:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">Xapian::Enquire::set_sort_by_value()</span></code> specifies the relevance doesn&#8217;t affect the
+ordering at all.</li>
+<li><code class="docutils literal"><span class="pre">Xapian::Enquire::set_sort_by_value_then_relevance()</span></code> specifies that relevance is
+used for ordering any groups of documents for which the value is the same.</li>
+<li><code class="docutils literal"><span class="pre">Xapian::Enquire::set_sort_by_relevance_then_value()</span></code> specifies that documents are
+ordered by relevance, and the value is only used to order groups of documents
+with identical relevance values (note: the weight has to be exactly the same
+for values to determine the order, so this method isn&#8217;t very useful when
+using BM25 with the default parameters, as that will rarely give identical
+scores to different documents).</li>
+</ul>
+<p>We&#8217;ll use the states dataset to demonstrate this, and the code from
+dealing with dates in the <a class="reference internal" href="range_queries.html"><span class="doc">range queries</span></a> HOWTO:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ g++ `xapian-config --cxxflags` code/c++/index_ranges2.cc code/c++/support.cc -o index_ranges2 `xapian-config --libs`
+$ ./index_ranges2 data/states.csv statesdb
+</pre></div>
+</div>
+<p>This has three document values: slot 1 has the year of admission to
+the union, slot 2 the full date (as &#8220;YYYYMMDD&#8221;), and slot 3 the latest
+population estimate. So if we want to sort by year of entry to the
+union and then within that by relevance, we want to add the following
+before we call <cite>get_mset</cite>:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span>    <span class="n">enquire</span><span class="p">.</span><span class="n">set_sort_by_value_then_relevance</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">false</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>The final parameter is <code class="docutils literal"><span class="pre">false</span></code> for ascending order,
+<code class="docutils literal"><span class="pre">true</span></code> for descending.  We can then run sorted searches like
+this:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ g++ `xapian-config --cxxflags` code/c++/search_sorting.cc code/c++/support.cc -o search_sorting `xapian-config --libs`
+$ ./search_sorting statesdb spanish
+1: #019 State of Texas December 29, 1845
+        Population 25,145,561
+2: #004 State of Montana November 8, 1889
+        Population 989,415
+&#39;spanish&#39;[0:10] = 19 4
+</pre></div>
+</div>
+</div>
+<div class="section" id="generated-sort-keys">
+<h2>Generated Sort Keys<a class="headerlink" href="#generated-sort-keys" title="Permalink to this headline">¶</a></h2>
+<p>To allow more elaborate sorting schemes, Xapian allows you to provide a
+functor object subclassed from <code class="docutils literal"><span class="pre">Xapian::KeyMaker</span></code> which generates a sort
+key for each matching document which is under consideration.  This is
+called at most once for each document, and then the generated sort keys are
+ordered by comparing byte values (i.e. with a string sort ignoring locale).</p>
+<div class="section" id="sorting-by-multiple-values">
+<h3>Sorting by Multiple Values<a class="headerlink" href="#sorting-by-multiple-values" title="Permalink to this headline">¶</a></h3>
+<p>There&#8217;s a standard subclass <code class="docutils literal"><span class="pre">Xapian::MultiValueKeyMaker</span></code> which allows
+sorting on more than one document value (so the first document value
+specified determines the order; amongst groups of documents where that&#8217;s
+the same, the second document value determines the order, and so on).</p>
+<p>We&#8217;ll use this to change our sorted search above to order by year of
+entry to the union and then by decreasing population.</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span>    <span class="n">Xapian</span><span class="o">::</span><span class="n">MultiValueKeyMaker</span> <span class="n">keymaker</span><span class="p">;</span>
+    <span class="n">keymaker</span><span class="p">.</span><span class="n">add_value</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">false</span><span class="p">);</span>
+    <span class="n">keymaker</span><span class="p">.</span><span class="n">add_value</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
+    <span class="n">enquire</span><span class="p">.</span><span class="n">set_sort_by_key_then_relevance</span><span class="p">(</span><span class="o">&amp;</span><span class="n">keymaker</span><span class="p">,</span> <span class="nb">false</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>As with the <cite>Enquire</cite> methods, <cite>add_value</cite> has a second parameter that
+controls whether it uses an ascending or descending sort. So now we
+can run a search with a more complex sort:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ g++ `xapian-config --cxxflags` code/c++/search_sorting2.cc code/c++/support.cc -o search_sorting2 `xapian-config --libs`
+$ ./search_sorting2 statesdb State
+1: #040 Commonwealth of Pennsylvania December 12, 1787
+        Population 12,702,379
+2: #043 State of New Jersey December 18, 1787
+        Population 8,791,894
+3: #049 State of Delaware December 7, 1787
+        Population 897,934
+4: #041 State of New York July 26, 1788
+        Population 19,378,102
+5: #034 State of Georgia January 2, 1788
+        Population 9,687,653
+6: #038 Commonwealth of Virginia June 25, 1788
+        Population 8,001,024
+7: #046 Commonwealth of Massachusetts February 6, 1788
+        Population 6,547,629
+8: #050 State of Maryland April 28, 1788
+        Population 5,773,552
+9: #036 State of South Carolina May 23, 1788
+        Population 4,625,384
+10: #048 State of Connecticut January 9, 1788
+        Population 3,574,097
+&#39;State&#39;[0:10] = 40 43 49 41 34 38 46 50 36 48
+</pre></div>
+</div>
+</div>
+<div class="section" id="other-uses-for-generated-keys">
+<h3>Other Uses for Generated Keys<a class="headerlink" href="#other-uses-for-generated-keys" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal"><span class="pre">Xapian::KeyMaker</span></code> can also be subclassed to sort based on a calculation.
+For example, &#8220;sort by geographical distance&#8221;, where a subclass could take
+the latitude and longitude of the user&#8217;s location, and coordinates of the
+document from a value slot, and sort results so that those closest to the
+user are ranked highest.</p>
+<p>For this, we&#8217;re going to want the geographical coordinates of each
+state stored in a value. We can use the approximate middle of the
+state for this purpose, which is calculated for us when parsing the
+<cite>states.csv</cite> file:</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span>	<span class="k">const</span> <span class="n">string</span><span class="o">&amp;</span> <span class="n">midlat</span> <span class="o">=</span> <span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_MIDLAT</span><span class="p">);</span>
+	<span class="k">const</span> <span class="n">string</span><span class="o">&amp;</span> <span class="n">midlon</span> <span class="o">=</span> <span class="n">fields</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">FIELD_MIDLON</span><span class="p">);</span>
+	<span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">midlat</span><span class="p">.</span><span class="n">empty</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">midlon</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span>
+	    <span class="n">doc</span><span class="p">.</span><span class="n">add_value</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">midlat</span> <span class="o">+</span> <span class="s">&quot;,&quot;</span> <span class="o">+</span> <span class="n">midlon</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>We don&#8217;t have to sort on these, so we&#8217;ve just put them both into one
+slot that we can easily read them out from again:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ g++ `xapian-config --cxxflags` code/c++/index_values_with_geo.cc code/c++/support.cc -o index_values_with_geo `xapian-config --libs`
+$ ./index_values_with_geo data/states.csv statesdb
+</pre></div>
+</div>
+<p>Now we need a KeyMaker; let&#8217;s have it return a key that sorts by distance from
+Washington, DC.</p>
+<div class="highlight-c++"><div class="highlight"><pre><span></span>    <span class="k">class</span> <span class="nc">DistanceKeyMaker</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Xapian</span><span class="o">::</span><span class="n">KeyMaker</span> <span class="p">{</span>
+	<span class="n">string</span> <span class="k">operator</span><span class="p">()(</span><span class="k">const</span> <span class="n">Xapian</span><span class="o">::</span><span class="n">Document</span><span class="o">&amp;</span> <span class="n">doc</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+            <span class="c1">// we want to return a sortable string which represents</span>
+            <span class="c1">// the distance from Washington, DC to the middle of this</span>
+            <span class="c1">// state.</span>
+	    <span class="k">const</span> <span class="n">string</span><span class="o">&amp;</span> <span class="n">latlon</span> <span class="o">=</span> <span class="n">doc</span><span class="p">.</span><span class="n">get_value</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+	    <span class="kt">size_t</span> <span class="n">comma</span> <span class="o">=</span> <span class="n">latlon</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="sc">&#39;,&#39;</span><span class="p">);</span>
+            <span class="kt">double</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">atof</span><span class="p">(</span><span class="n">latlon</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+            <span class="kt">double</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">atof</span><span class="p">(</span><span class="n">latlon</span><span class="p">.</span><span class="n">c_str</span><span class="p">()</span> <span class="o">+</span> <span class="n">comma</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+	    <span class="n">pair</span><span class="o">&lt;</span><span class="kt">double</span><span class="p">,</span> <span class="kt">double</span><span class="o">&gt;</span> <span class="n">coords</span> <span class="o">=</span> <span class="n">make_pair</span><span class="p">(</span><span class="n">lat</span><span class="p">,</span> <span class="n">lon</span><span class="p">);</span>
+            <span class="n">pair</span><span class="o">&lt;</span><span class="kt">double</span><span class="p">,</span> <span class="kt">double</span><span class="o">&gt;</span> <span class="n">washington</span> <span class="o">=</span> <span class="n">make_pair</span><span class="p">(</span><span class="mf">38.012</span><span class="p">,</span> <span class="o">-</span><span class="mf">77.037</span><span class="p">);</span>
+	    <span class="kt">double</span> <span class="n">distance</span> <span class="o">=</span> <span class="n">distance_between_coords</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">washington</span><span class="p">);</span>
+            <span class="k">return</span> <span class="n">Xapian</span><span class="o">::</span><span class="n">sortable_serialise</span><span class="p">(</span><span class="n">distance</span><span class="p">);</span>
+	<span class="p">}</span>
+    <span class="p">};</span>
+    <span class="n">DistanceKeyMaker</span> <span class="n">distance_keymaker</span><span class="p">;</span>
+    <span class="n">enquire</span><span class="p">.</span><span class="n">set_sort_by_key_then_relevance</span><span class="p">(</span><span class="o">&amp;</span><span class="n">distance_keymaker</span><span class="p">,</span> <span class="nb">false</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>And running it is as simple as before:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ g++ `xapian-config --cxxflags` code/c++/search_sorting3.cc code/c++/support.cc -o search_sorting3 `xapian-config --libs`
+$ ./search_sorting3 statesdb State
+1: #050 State of Maryland April 28, 1788
+        Population 5,773,552
+2: #049 State of Delaware December 7, 1787
+        Population 897,934
+3: #040 Commonwealth of Pennsylvania December 12, 1787
+        Population 12,702,379
+4: #043 State of New Jersey December 18, 1787
+        Population 8,791,894
+5: #039 State of West Virginia June 20, 1863
+        Population 1,859,815
+6: #037 State of North Carolina November 21, 1789
+        Population 9,535,483
+7: #041 State of New York July 26, 1788
+        Population 19,378,102
+8: #038 Commonwealth of Virginia June 25, 1788
+        Population 8,001,024
+9: #048 State of Connecticut January 9, 1788
+        Population 3,574,097
+10: #036 State of South Carolina May 23, 1788
+        Population 4,625,384
+&#39;State&#39;[0:10] = 50 49 40 43 39 37 41 38 48 36
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Sorting</a><ul>
+<li><a class="reference internal" href="#sorting-by-value">Sorting by Value</a></li>
+<li><a class="reference internal" href="#generated-sort-keys">Generated Sort Keys</a><ul>
+<li><a class="reference internal" href="#sorting-by-multiple-values">Sorting by Multiple Values</a></li>
+<li><a class="reference internal" href="#other-uses-for-generated-keys">Other Uses for Generated Keys</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="facets.html"
+                        title="previous chapter">Facets</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="collapsing.html"
+                        title="next chapter">Collapsing of Search Results</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/howtos/sorting.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="collapsing.html" title="Collapsing of Search Results"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="facets.html" title="Facets"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Getting Started with Xapian v1.4</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >How To...</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2003-2017 Xapian Documentation Team &amp; Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.9.
+    </div>
+  </body>
+</html>
